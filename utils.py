@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Gabor Seljan. All rights reserved.
+# Copyright (c) 2025 Gabor Seljan. All rights reserved.
 # Licensed under the MIT License.
 
 import os

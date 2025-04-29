@@ -7,7 +7,7 @@ SeedClass is an experimental machine learning project employing binary classific
 __author__ = 'Gabor Seljan'
 __version__ = '0.3'
 __date__ = '2024/11/17'
-__copyright__ = 'Copyright (c) 2024 Gabor Seljan'
+__copyright__ = 'Copyright (c) 2025 Gabor Seljan'
 __license__ = 'MIT'
 
 import os
