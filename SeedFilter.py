@@ -113,7 +113,7 @@ def main():
 
     args = parser.parse_args()
 
-    if not os.path.exists(args.input) or not os.path.isdir(args.input):
+    if not os.path.isdir(args.input):
         logging.error(f'Input folder {args.input} does not exist or is not a directory!')
         sys.exit(1)
 

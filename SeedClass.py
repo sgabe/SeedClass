@@ -199,8 +199,17 @@ def load_data(data, dir, label=LABEL_NEGATIVE):
 
 def main():
 
+    if not os.path.isdir(args.negative):
+        logging.error(f'Folder of negative samples {args.negative} does not exist or it is not a directory!')
+        sys.exit(1)
 
+    if not os.path.isdir(args.positive):
+        logging.error(f'Folder of positive samples {args.positive} does not exist or it is not a directory!')
+        sys.exit(1)
 
+    if not os.path.isdir(args.unknown):
+        logging.error(f'Folder of unknown samples {args.unknown} does not exist or it is not a directory!')
+        sys.exit(1)
 
     dd = {}
     if args.negative:
