@@ -37,7 +37,7 @@ from sklearn.model_selection import KFold
 from sklearn.model_selection import train_test_split
 
 
-banner = '''
+print('''
 
                    _____               _  _____ _
                   / ____|             | |/ ____| |      v{}
@@ -46,9 +46,7 @@ banner = '''
                   ____) |  __/  __/ (_| | |____| | (_| \\__ \\__ \\
                  |_____/ \\___|\\___|\\__,_|\\_____|_|\\__,_|___/___/
 
-'''.format(__version__)
-
-print(banner)
+'''.format(__version__))
 
 
 parser = ArgumentParser(
