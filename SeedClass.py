@@ -14,6 +14,7 @@ __license__ = 'MIT'
 import os
 import sys
 import heapq
+import logging
 import numpy as np
 import pandas as pd
 
@@ -33,6 +34,15 @@ from sklearn.model_selection import KFold, train_test_split
 
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
+logging.basicConfig(
+    level=logging.INFO,
+    datefmt='%Y-%m-%d %H:%M:%S',
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('SeedClass.log', mode='w'),
+        logging.StreamHandler()
+    ]
+)
 
 print('''
 
@@ -265,7 +275,7 @@ def main():
         )
 
     scores = model.evaluate(X_test, y_test, verbose=VERBOSE)
-    print(f'[*] Loss: {scores[0] * 100:.2f}% - Precision: {scores[3] * 100:.2f}% - Recall: {scores[2] * 100:.2f}%')
+    logging.info(f'Loss: {scores[0] * 100:.2f}% - Recall: {scores[2] * 100:.2f}% - Precision: {scores[3] * 100:.2f}%')
 
     dd = {}
     if args.unknown:
@@ -307,13 +317,13 @@ def main():
         if len(lst) == 20:
             break
 
-    print(f'[*] Selected {len(lst)} files out of {len(X_pred)} total')
+    logging.info(f'Selected {len(lst)} files out of {len(X_pred)} total')
 
     try:
         for filename in lst:
-            print('{}'.format(filename))
+            logging.info(filename)
     except:
-        print('[!] Something, somewhere went terribly wrong!')
+        logging.error('Something, somewhere went terribly wrong!')
         pass
 
 
