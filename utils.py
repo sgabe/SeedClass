@@ -21,65 +21,55 @@ pd.set_option('display.precision', 16)
 
 
 def load_data(data, dir, label=config.LABEL_NEGATIVE):
-  def process(path):
+    def process(path):
 
-    # Normalize decimal numbers
-    def scale(X):
-      lst = list()
-      for i in X:
-        lst.append((i-min(X))/(max(X)-min(X)) * config.FEATURE_RANGE_MAX)
-      return lst
+        # Normalize decimal numbers.
+        def scale(X):
+            return [(i - min(X)) / (max(X) - min(X)) * config.FEATURE_RANGE_MAX for i in X]
 
-    # Yield successive n-sized chunks from lst
-    def chunks(lst, n):
-      for i in range(0, len(lst), n):
-        yield lst[i:i + n]
+        # Yield successive n-sized chunks from a list.
+        def chunks(lst, n):
+            return [lst[i:i + n] for i in range(0, len(lst), n)]
 
-    encoded = list()
-    with open(path, 'rb') as f:
-      # Encode file as Base64 string
-      for i in b64encode(f.read()):
-        # Encode every single char as a decimal number
-        encoded.append(config.CHARMAP[chr(i)])
+        with open(path, 'rb') as f:
+            data = f.read()
+        # Encode file content via Base64 and map each byte using CHARMAP.
+        encoded = [config.CHARMAP.get(chr(i), 0) for i in b64encode(data)]
 
-    # Group every 6 number to a larger decimal
-    decimal = list()
-    for i in chunks(encoded, 6):
-        if config.ENCODING:
-            decimal.append(int(''.join(map(str, i))))
-        else:
-            a = np.array(i)
-            a = a[a != 0]
-            p = np.prod(a)
-            decimal.append(p)
+        # Group every 6 numbers into a single decimal feature.
+        decimal = [
+            np.prod(np.array(chunk)[np.array(chunk) != 0]) if config.ENCODING == 'product'
+            else int(''.join(map(str, chunk)))
+            for chunk in chunks(encoded, 6)
+        ]
 
-    # Pad the list to 256 elements
-    while len(decimal) < 256:
-      decimal.append(0)
+        # Pad the feature list to 256 elements.
+        while len(decimal) < 256:
+            decimal.append(0)
+        return decimal
 
-    return decimal
-
-  good = []
-  bad = []
-  try:
-    print('Processing directory {} containing samples for label {}'.format(os.path.join(os.getcwd(), dir), label))
-    for file in [f for f in os.listdir(os.path.join(os.getcwd(), dir)) if f.lower().endswith('.emf')]:
-      features = process(os.path.join(os.getcwd(), dir, file))
-      features[:0] = [label]
-      if len(features) == 257: # Ignore too big files
-        good.append(len(features))
-        data.update({file: features})
-      else:
-        bad.append(len(features))
-        print('Ignoring {} which has {} features and is {} bytes'.format(file, len(features), os.path.getsize(os.path.join(os.getcwd(), dir, file))))
-  except FileNotFoundError:
-    print('The system cannot find the path specified!')
-  except Exception as e:
-    print('Something, somewhere went terribly wrong!')
-    pass
-  finally:
-    print(f'Good: {len(good)} - Bad: {len(bad)} - Ratio: {len(bad)/(len(bad)+len(good)) * 100:.2f}%')
-    return data
+    good, bad = [], []
+    try:
+        print('Processing directory {} containing samples for label {}'.format(os.path.join(os.getcwd(), dir), label))
+        for file in [f for f in os.listdir(os.path.join(os.getcwd(), dir)) if f.lower().endswith('.emf')]:
+            features = process(os.path.join(os.getcwd(), dir, file))
+            features[:0] = [label]
+            if len(features) == 257: # Ignore too big files
+                good.append(len(features))
+                data.update({file: features})
+            else:
+                bad.append(len(features))
+                print('Ignoring {} which has {} features and is {} bytes'.format(file, len(features), os.path.getsize(os.path.join(os.getcwd(), dir, file))))
+    except FileNotFoundError:
+        print('The system cannot find the path specified!')
+    except Exception as e:
+        print('Something, somewhere went terribly wrong!')
+        pass
+    finally:
+        total = len(good) + len(bad)
+        ratio = (len(bad) / total * 100) if total > 0 else 0
+        print(f'Good: {len(good)} - Bad: {len(bad)} - Ratio: {ratio:.2f}%')
+        return data
 
 
 def plot_essential_metrics(metrics, history):
@@ -93,15 +83,15 @@ def plot_essential_metrics(metrics, history):
         plt.suptitle('Essential Metrics')
 
         if metric == 'loss':
-          plt.ylim([0,0.6])
+            plt.ylim([0,0.6])
         elif metric == 'auc':
-          plt.ylim([0.7,1])
+            plt.ylim([0.7,1])
         elif metric == 'prc':
-          plt.ylim([0.9,1])
+            plt.ylim([0.9,1])
         elif metric == 'precision':
-          plt.ylim([0.9,1])
+            plt.ylim([0.9,1])
         else:
-          plt.ylim([0.7,1])
+            plt.ylim([0.7,1])
 
         ax = plt.gca()
         plt.legend()
@@ -163,15 +153,15 @@ def plot_cross_val_essential_metrics(metrics, histories):
         plt.xlabel('Epoch')
 
         if metric == 'loss':
-          plt.ylim([0,0.6])
+            plt.ylim([0,0.6])
         elif metric == 'auc':
-          plt.ylim([0.7,1])
+            plt.ylim([0.7,1])
         elif metric == 'prc':
-          plt.ylim([0.9,1])
+            plt.ylim([0.9,1])
         elif metric == 'precision':
-          plt.ylim([0.9,1])
+            plt.ylim([0.9,1])
         else:
-          plt.ylim([0.7,1])
+            plt.ylim([0.7,1])
 
         plt.suptitle('Essential Metrics')
     plt.show()

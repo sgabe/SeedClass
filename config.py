@@ -18,9 +18,9 @@ TEST_SIZE         = 0.25                      # Default is 0.25
 BATCH_SIZE        = 32                        # Default is 32
 LEARNING_RATE     = 0.001                     # Default is 0.001
 SEED              = None                      # Default is None
-N_SPLITS          = 4
-EPOCHS            = 10
-VERBOSE           = 0
+N_SPLITS          = 4                         # Default is 4
+EPOCHS            = 10                        # Default is 10
+VERBOSE           = 0                         # Default is 0
 
 # Increase for lower FP and higher precision yielding less files.
 # Decrease for lower FN and higher recall yielding more files.

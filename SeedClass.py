@@ -5,11 +5,11 @@
 SeedClass is an experimental machine learning project employing binary classification to predict whether fuzzing a specific seed file will lead to a vulnerability.
 """
 
-__author__ = 'Gabor Seljan'
-__version__ = '0.3'
-__date__ = '2024/11/17'
+__author__    = 'Gabor Seljan'
+__version__   = '0.4'
+__date__      = '2025/04/02'
 __copyright__ = 'Copyright (c) 2025 Gabor Seljan'
-__license__ = 'MIT'
+__license__   = 'MIT'
 
 import os
 import sys
@@ -119,8 +119,8 @@ VERBOSE           = args.verbose              # Default is 0
 # Decrease for lower FN and higher recall yielding more files.
 THRESHOLD         = args.threshold            # Default is 0.50
 
-LABEL_NEGATIVE  = 0
-LABEL_POSITIVE  = 1
+LABEL_NEGATIVE    = 0
+LABEL_POSITIVE    = 1
 
 CHARMAP           = {
     "A":64, "N":13, "a":26, "n":39, "0":52,
@@ -129,8 +129,8 @@ CHARMAP           = {
     "D":3,  "Q":16, "d":29, "q":42, "3":55,
     "E":4,  "R":17, "e":30, "r":43, "4":56,
     "F":5,  "S":18, "f":31, "s":44, "5":57,
-    "G":6,  "T":19, "g":32, "t":45, "6":58, 
-    "H":7,  "U":20, "h":33, "u":46, "7":59, 
+    "G":6,  "T":19, "g":32, "t":45, "6":58,
+    "H":7,  "U":20, "h":33, "u":46, "7":59,
     "I":8,  "V":21, "i":34, "v":47, "8":60,
     "J":9,  "W":22, "j":35, "w":48, "9":61,
     "K":10, "X":23, "k":36, "x":49, "+":62,
@@ -139,76 +139,64 @@ CHARMAP           = {
 }
 
 
-
-
-
-
-
-
-
-
 def load_data(data, dir, label=LABEL_NEGATIVE):
-  def process(path):
 
-    # Normalize decimal numbers
-    def scale(X):
-      lst = list()
-      for i in X:
-        lst.append((i-min(X))/(max(X)-min(X)) * FEATURE_RANGE_MAX)
-      return lst
 
-    # Yield successive n-sized chunks from lst
-    def chunks(lst, n):
-      for i in range(0, len(lst), n):
-        yield lst[i:i + n]
 
-    encoded = list()
-    with open(path, 'rb') as f:
-      # Encode file as Base64 string
-      for i in b64encode(f.read()):
-        # Encode every single char as a decimal number
-        encoded.append(CHARMAP[chr(i)])
 
-    # Group every 6 number to a larger decimal
-    decimal = list()
-    for i in chunks(encoded, 6):
-        if args.encoding == 'simple':
-            decimal.append(int(''.join(map(str, i))))
-        elif args.encoding == 'product':
-            a = np.array(i)
-            a = a[a != 0]
-            p = np.prod(a)
-            decimal.append(p)
+    def process(path):
+        # Normalize decimal numbers.
+        def scale(X):
+            return [(i - min(X)) / (max(X) - min(X)) * FEATURE_RANGE_MAX for i in X]
 
-    # Pad the list to 256 elements
-    while len(decimal) < 256:
-      decimal.append(0)
-    return decimal
+        # Yield successive n-sized chunks from a list.
+        def chunks(lst, n):
+            return [lst[i:i + n] for i in range(0, len(lst), n)]
 
-  good = []
-  bad = []
-  try:
-    print('[*] Processing directory {} containing samples for label {}'.format(os.path.join(os.getcwd(), dir), label))
-    for file in [f for f in os.listdir(os.path.join(os.getcwd(), dir)) if f.lower().endswith('.emf')]:
-      features = process(os.path.join(os.getcwd(), dir, file))
-      features[:0] = [label]
-      if len(features) == 257: # Ignore too big files
-        good.append(len(features))
-        data.update({file: features})
-      else:
-        bad.append(len(features))
-        print('[-] Ignoring {} which has {} features and is {} bytes'.format(file, len(features), os.path.getsize(os.path.join(os.getcwd(), dir, file))))
-  except FileNotFoundError:
-    print('[!] The system cannot find the path specified!')
-  except Exception as e:
-    print('[!] Something, somewhere went terribly wrong!')
-    pass
-  finally:
-    print(f'[+] Good: {len(good)} - Bad: {len(bad)} - Ratio: {len(bad)/(len(bad)+len(good)) * 100:.2f}%')
-    return data
+        with open(path, 'rb') as f:
+            data = f.read()
+        # Encode file content via Base64 and map each byte using CHARMAP.
+        encoded = [CHARMAP.get(chr(i), 0) for i in b64encode(data)]
+
+        # Group every 6 numbers into a single decimal feature.
+        decimal = [
+            np.prod(np.array(chunk)[np.array(chunk) != 0]) if ENCODING == 'product'
+            else int(''.join(map(str, chunk)))
+            for chunk in chunks(encoded, 6)
+        ]
+
+        # Pad the feature list to 256 elements.
+        while len(decimal) < 256:
+            decimal.append(0)
+        return decimal
+
+    good, bad = [], []
+    try:
+        logging.info(f'Processing directory {os.path.join(os.getcwd(), dir)} containing samples for label {label}')
+        for file in [f for f in os.listdir(os.path.join(os.getcwd(), dir)) if f.lower().endswith('.emf')]:
+            features = process(os.path.join(os.getcwd(), dir, file))
+            features.insert(0, label)
+            if len(features) == 257: # Ignore too big files
+                good.append(len(features))
+                data.update({file: features})
+            else:
+                bad.append(len(features))
+                logging.warning(f'Ignoring {file} which has {len(features)} features and is {os.path.getsize(os.path.join(os.getcwd(), dir, file))} bytes')
+    except FileNotFoundError:
+        logging.error('The system cannot find the specified path!')
+    except Exception as e:
+        logging.error(f'Something, somewhere went terribly wrong! Error: {e}')
+        pass
+    finally:
+        total = len(good) + len(bad)
+        ratio = (len(bad) / total * 100) if total > 0 else 0
+        logging.info(f'Good: {len(good)} - Bad: {len(bad)} - Ratio: {ratio:.2f}%')
+        return data
 
 
 def main():
+
+
 
 
     dd = {}
@@ -293,23 +281,27 @@ def main():
     indices = []
 
     if np.count_nonzero(preds) == 0:
-        print(f'[*] Automatically adjusting threshold for finding best candidates')
-        best = []
-        uniques = set()
+        consent = input('No positive predictions found. Automatically adjust threshold? (yes/no): ').strip().lower()
+        if consent in ['yes', 'y']:
+            logging.info('Automatically adjusting threshold for finding best candidates')
+            best = []
+            uniques = set()
 
-        preds = model.predict(X_pred, verbose=VERBOSE)
+            preds = model.predict(X_pred, verbose=VERBOSE)
 
-        flats = [item for sublist in preds for item in sublist]
-        for v in heapq.nlargest(len(flats), flats):
-            if v not in uniques:
-                uniques.add(v)
-                best.append(v)
-            if len(best) == 21:
-                break
-        
-        indices = [flats.index(v) for v in best]
+            flats = [item for sublist in preds for item in sublist]
+            for v in heapq.nlargest(len(flats), flats):
+                if v not in uniques:
+                    uniques.add(v)
+                    best.append(v)
+                if len(best) == 21:
+                    break
 
-        preds = (preds > min(best)).astype('int32')
+            indices = [flats.index(v) for v in best]
+
+            preds = (preds > min(best)).astype('int32')
+        else:
+            logging.error('Threshold adjustment skipped. Predictions might not include the best candidates.')
 
     lst = list()
     for idx, l in np.ndenumerate(preds):
