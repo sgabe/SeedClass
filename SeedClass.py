@@ -81,8 +81,6 @@ parser.add_argument('--epochs', dest='epochs', type=int, default=10,
 parser.add_argument('--threshold', dest='threshold', type=float, default=0.5,
                     help='set threshold (default 0.5)')
 
-parser.add_argument('--split', dest='split',
-                    help='split large metafile into smaller pieces')
 
 parser.add_argument('--verbose', dest='verbose', action='store_true',
                     help='run in verbose mode')
@@ -128,35 +126,12 @@ CHARMAP           = {
 }
 
 
-def save_emf(records, index):
-    new_emf = pyemf3.EMF(width=8, height=6)
-    new_emf.records.extend(records)
-    filename = f'output_{index}.emf'
-    print(f'[*] Saving {filename}')
-    new_emf.save(filename)
 
 
-def split_emf(input_file, split_size):
-    print(f'[*] Splitting {input_file} into {split_size} smaller pieces')
 
-    e = pyemf3.EMF(verbose=VERBOSE)
-    e.load(input_file)
 
-    counter = 0
-    records = []
 
-    for record in e.records:
-        if record.iType != 1:
-            records.append(record)
-        if len(records) == split_size:
-            counter += 1
-            save_emf(records, counter)
-            records = []
 
-    # Save any remaining records
-    if records:
-        counter += 1
-        save_emf(records, counter)
 
 
 def load_data(data, dir, label=LABEL_NEGATIVE):
@@ -222,9 +197,6 @@ def load_data(data, dir, label=LABEL_NEGATIVE):
 
 def main():
 
-    if args.split:
-        split_emf(args.split, 2)
-        sys.exit(0)
 
     dd = {}
     if args.negative:
