@@ -110,6 +110,7 @@ def plot_essential_metrics(metrics, history):
 
 
 def plot_confusion_metrics(metrics, history):
+    fig = plt.figure()
     for n, metric in enumerate(metrics):
         name = metric.replace("_"," ").capitalize()
         for i, phase in enumerate(['Training', 'Validation']):
@@ -124,6 +125,7 @@ def plot_confusion_metrics(metrics, history):
             plt.legend()
     plt.tight_layout()
     plt.show()
+    fig.savefig('figures/metrics-confusion.png', bbox_inches='tight')
 
 
 def plot_prc(name, labels, predictions, **kwargs):
@@ -134,10 +136,11 @@ def plot_prc(name, labels, predictions, **kwargs):
     plt.grid(True)
     ax = plt.gca()
     ax.set_aspect('equal')
-    plt.legend(loc='lower right');
+    plt.legend(loc='lower left');
 
 
 def plot_cross_val_essential_metrics(metrics, histories):
+    fig = plt.figure()
     for n, metric in enumerate(metrics):
         train_scores = []
         val_scores = []
@@ -172,9 +175,11 @@ def plot_cross_val_essential_metrics(metrics, histories):
 
         plt.suptitle('Essential Metrics')
     plt.show()
+    fig.savefig('figures/metrics-cross-val-essential.png', bbox_inches='tight')
 
 
 def plot_cross_val_confusion_metrics(metrics, histories):
+    fig = plt.figure()
     for n, metric in enumerate(metrics):
         train_scores = []
         val_scores = []
@@ -195,3 +200,4 @@ def plot_cross_val_confusion_metrics(metrics, histories):
     plt.legend()
     plt.tight_layout()
     plt.show()
+    fig.savefig('figures/metrics-cross-val-confusion.png', bbox_inches='tight')
