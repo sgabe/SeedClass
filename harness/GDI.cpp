@@ -60,12 +60,21 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
         OutputDebugString(L"Image loaded");
 #endif
         thumbnail = image->GetThumbnailImage(100, 100, NULL, NULL);
-#if _DEBUG
         if (thumbnail && (Ok == thumbnail->GetLastStatus()))
         {
+#if _DEBUG
             OutputDebugString(L"Thumbnail created");
-        }
 #endif
+        }
+
+        graphics = Graphics::FromImage(image);
+        if (graphics && (Ok == graphics->GetLastStatus()))
+        {
+#if _DEBUG
+            OutputDebugString(L"Graphics created");
+#endif
+            graphics->DrawImage(image, 0, 0);
+        }
     }
 
     if (metafile)
@@ -83,15 +92,6 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
 #endif
                 Gdiplus::Metafile::EmfToWmfBits(hEmf, 0, NULL, (INT)x, (INT)y);
             }
-        }
-
-        graphics = Graphics::FromImage(metafile);
-        if (graphics && (Ok == graphics->GetLastStatus()))
-        {
-#if _DEBUG
-            OutputDebugString(L"Graphics created");
-#endif
-            graphics->DrawImage(image, 0, 0);
         }
     }
 
