@@ -7,7 +7,7 @@ from datetime import datetime
 
 ENCODING          = True
 VALIDATION        = True
-REGULARIZATION    = True
+REGULARIZATION    = False
 
 FEATURE_RANGE_MAX = 0.646464646464 if ENCODING else (pow(64, 6))/pow(10,11) # 0.68719476736
 LOG_DIR           = os.path.join(os.getcwd(), 'logs/fit/' + datetime.now().strftime('%Y%m%d-%H%M%S'))
