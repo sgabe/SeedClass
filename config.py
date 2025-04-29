@@ -9,7 +9,10 @@ ENCODING          = True
 VALIDATION        = True
 REGULARIZATION    = False
 
-FEATURE_RANGE_MAX = 0.646464646464 if ENCODING else (pow(64, 6))/pow(10,11) # 0.68719476736
+FEATURE_RANGE_MAX_SIMPLE = 0.646464646464
+FEATURE_RANGE_MAX_PRODUCT = (pow(64, 6)) / pow(10, 11) # 0.68719476736
+
+FEATURE_RANGE_MAX = FEATURE_RANGE_MAX_SIMPLE if ENCODING else FEATURE_RANGE_MAX_PRODUCT
 LOG_DIR           = os.path.join(os.getcwd(), 'logs/fit/' + datetime.now().strftime('%Y%m%d-%H%M%S'))
 TEST_SIZE         = 0.25                      # Default is 0.25
 BATCH_SIZE        = 32                        # Default is 32

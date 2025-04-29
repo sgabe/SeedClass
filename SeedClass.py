@@ -103,7 +103,10 @@ ENCODING          = args.encoding
 VALIDATION        = args.validation
 REGULARIZATION    = args.regularization
 
-FEATURE_RANGE_MAX = 0.646464646464 if ENCODING == 'simple' else (pow(64, 6))/pow(10,11) # 0.68719476736
+FEATURE_RANGE_MAX_SIMPLE = 0.646464646464
+FEATURE_RANGE_MAX_PRODUCT = (pow(64, 6)) / pow(10, 11) # 0.68719476736
+
+FEATURE_RANGE_MAX = FEATURE_RANGE_MAX_SIMPLE if ENCODING == 'simple' else FEATURE_RANGE_MAX_PRODUCT
 TEST_SIZE         = args.test_size            # Default is 0.25
 BATCH_SIZE        = args.batch_size           # Default is 32
 LEARNING_RATE     = args.learning_rate        # Default is 0.001
