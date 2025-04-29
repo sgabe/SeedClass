@@ -3,6 +3,9 @@
 
 """
 SeedClass is an experimental machine learning project employing binary classification to predict whether fuzzing a specific seed file will lead to a vulnerability.
+
+Example:
+    python SeedClass.py -N ./negative_samples -P ./positive_samples -U ./unknown_samples --epochs 20 --batch-size 64 --learning-rate 0.0005 --validation --verbose
 """
 
 __author__    = 'Gabor Seljan'
