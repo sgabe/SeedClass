@@ -14,27 +14,24 @@ __license__ = 'MIT'
 import os
 import sys
 import heapq
-import pyemf3
 import numpy as np
 import pandas as pd
 
-from argparse import *
 from shutil import copy
 from base64 import b64encode
 from datetime import datetime
 
 from tensorflow.keras import Input
-from tensorflow.keras.metrics import AUC
-from tensorflow.keras.metrics import Recall
-from tensorflow.keras.metrics import Precision
 from tensorflow.keras.regularizers import L2
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.metrics import AUC, Recall, Precision
 
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.model_selection import KFold
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import KFold, train_test_split
+
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 
 print('''
