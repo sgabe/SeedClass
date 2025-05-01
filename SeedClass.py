@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.4'
+__version__   = '0.4.1'
 __date__      = '2025/04/02'
 __copyright__ = 'Copyright (c) 2025 Gabor Seljan'
 __license__   = 'MIT'
@@ -31,6 +31,8 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.metrics import AUC, Recall, Precision
+from tensorflow.keras.metrics import TruePositives, TrueNegatives
+from tensorflow.keras.metrics import FalsePositives, FalseNegatives
 
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import KFold, train_test_split
@@ -245,6 +247,12 @@ def main():
         metrics=['accuracy',
             Recall(thresholds=THRESHOLD, name='recall'),
             Precision(thresholds=THRESHOLD, name='precision'),
+            TruePositives(thresholds=THRESHOLD, name='tp'),
+            TrueNegatives(thresholds=THRESHOLD, name='tn'),
+            FalsePositives(thresholds=THRESHOLD, name='fp'),
+            FalseNegatives(thresholds=THRESHOLD, name='fn'),
+            AUC(name='auc'),
+            AUC(name='prc', curve='PR')
         ]
     )
 
@@ -278,7 +286,7 @@ def main():
         )
 
     scores = model.evaluate(X_test, y_test, verbose=VERBOSE)
-    logging.info(f'Loss: {scores[0] * 100:.2f}% - Recall: {scores[2] * 100:.2f}% - Precision: {scores[3] * 100:.2f}%')
+    logging.info(f'Loss: {scores[0] * 100:.2f}% - Recall: {scores[2] * 100:.2f}% - Precision: {scores[3] * 100:.2f}% - PRC: {scores[9] * 100:.2f}%')
 
     dd = {}
     if args.unknown:
