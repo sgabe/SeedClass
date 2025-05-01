@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.4.1'
+__version__   = '0.4.2'
 __date__      = '2025/04/02'
 __copyright__ = 'Copyright (c) 2025 Gabor Seljan'
 __license__   = 'MIT'
@@ -21,7 +21,7 @@ import logging
 import numpy as np
 import pandas as pd
 
-from shutil import copy
+from shutil import copy2
 from base64 import b64encode
 
 from tensorflow.keras import Input
@@ -72,6 +72,8 @@ parser.add_argument('-P', '--positive', dest='positive',
                     help='path to directory containing positive samples')
 parser.add_argument('-U', '--unknown', dest='unknown',
                     help='path to directory containing unknown samples')
+parser.add_argument('-S', '--selected', dest='selected',
+                    help='path to directory containing selected samples')
 
 parser.add_argument('-E', '--encoding', dest='encoding', choices=['simple', 'product'], default='simple',
                     help='encoding method to use (simple or product)')
@@ -330,6 +332,9 @@ def main():
     try:
         for filename in lst:
             logging.info(filename)
+            if args.selected:
+                os.makedirs(args.selected, exist_ok=True)
+                copy2(os.path.join(args.unknown, filename), os.path.join(args.selected, filename))
     except:
         logging.error('Something, somewhere went terribly wrong!')
         pass
