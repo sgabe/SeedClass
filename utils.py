@@ -22,7 +22,6 @@ pd.set_option('display.precision', 16)
 
 def load_data(data, dir, label=config.LABEL_NEGATIVE):
     def process(path):
-
         # Normalize decimal numbers.
         def scale(X):
             return [(i - min(X)) / (max(X) - min(X)) * config.FEATURE_RANGE_MAX for i in X]

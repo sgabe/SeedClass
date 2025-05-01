@@ -23,7 +23,6 @@ import pandas as pd
 
 from shutil import copy
 from base64 import b64encode
-from datetime import datetime
 
 from tensorflow.keras import Input
 from tensorflow.keras.regularizers import L2
@@ -52,7 +51,7 @@ logging.basicConfig(
 print('''
 
                    _____               _  _____ _
-                  / ____|             | |/ ____| |      v{}
+                  / ____|             | |/ ____| |    v{}
                  | (___   ___  ___  __| | |    | | __ _ ___ ___
                   \\___ \\ / _ \\/ _ \\/ _` | |    | |/ _` / __/ __|
                   ____) |  __/  __/ (_| | |____| | (_| \\__ \\__ \\
@@ -63,43 +62,41 @@ print('''
 
 parser = ArgumentParser(
     formatter_class=RawDescriptionHelpFormatter,
-    description=__doc__,
-    prog='seedclass'
+    description='Binary classifier that extracts features from seed files and predicts their vulnerability potential.',
+    prog='SeedClass'
 )
 
 parser.add_argument('-N', '--negative', dest='negative',
-                    help='Path to directory containing negative samples')
+                    help='path to directory containing negative samples')
 parser.add_argument('-P', '--positive', dest='positive',
-                    help='Path to directory containing positive samples')
+                    help='path to directory containing positive samples')
 parser.add_argument('-U', '--unknown', dest='unknown',
-                    help='Path to directory containing unknown samples')
+                    help='path to directory containing unknown samples')
 
 parser.add_argument('-E', '--encoding', dest='encoding', choices=['simple', 'product'], default='simple',
-                    help='Encoding method to use (simple or product)')
+                    help='encoding method to use (simple or product)')
 parser.add_argument('-V', '--validation', dest='validation', action='store_true',
-                    help='Whether or not use cross-validation (default false)')
+                    help='whether or not use cross-validation (default false)')
 parser.add_argument('-R', '--regularization', dest='regularization', action='store_true',
-                    help='Whether or not use L2 regularization (default false)')
+                    help='whether or not use L2 regularization (default false)')
 
 parser.add_argument('--seed', dest='seed', type=int, default=None,
-                    help='Set initial seed (default none)')
+                    help='set initial seed (default none)')
 parser.add_argument('--test-size', dest='test_size', type=float, default=0.2,
-                    help='Set test size (default 0.2)')
+                    help='set test size (default 0.2)')
 parser.add_argument('--batch-size', dest='batch_size', type=int, default=32,
-                    help='Set batch size (default 32)')
+                    help='set batch size (default 32)')
 parser.add_argument('--learning-rate', dest='learning_rate', type=float, default=0.001,
-                    help='Set learning rate (default 0.001)')
+                    help='set learning rate (default 0.001)')
 parser.add_argument('--nsplits', dest='nsplits', type=int, default=4,
-                    help='Set n-splits (default 4)')
+                    help='set n-splits (default 4)')
 parser.add_argument('--epochs', dest='epochs', type=int, default=10,
-                    help='Set number of epochs (default 10)')
+                    help='set number of epochs (default 10)')
 parser.add_argument('--threshold', dest='threshold', type=float, default=0.5,
-                    help='Set threshold (default 0.5)')
-
+                    help='set threshold (default 0.5)')
 
 parser.add_argument('--verbose', dest='verbose', action='store_true',
-                    help='Run in verbose mode')
-
+                    help='run in verbose mode')
 
 args = parser.parse_args()
 
@@ -145,11 +142,8 @@ CHARMAP           = {
 
 
 def load_data(data, dir, label=LABEL_NEGATIVE):
-
-
-
-
     def process(path):
+
         # Normalize decimal numbers.
         def scale(X):
             return [(i - min(X)) / (max(X) - min(X)) * FEATURE_RANGE_MAX for i in X]
@@ -200,7 +194,6 @@ def load_data(data, dir, label=LABEL_NEGATIVE):
 
 
 def main():
-
     if not os.path.isdir(args.negative):
         logging.error(f'Folder of negative samples {args.negative} does not exist or it is not a directory!')
         sys.exit(1)

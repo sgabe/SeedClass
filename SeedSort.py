@@ -55,7 +55,6 @@ def handle_exit_signal(signum, frame):
 
 
 def run_bugid(file, files, crash_dir, clean_dir, lock):
-    '''Executes BugId on the given file, checks stdout for bugs, and moves crashing/non-crashing files immediately.'''
     if stop.is_set():
         return
 
@@ -100,8 +99,6 @@ def run_bugid(file, files, crash_dir, clean_dir, lock):
 
 
 def process_files(input_dir, crash_dir, clean_dir, max_threads):
-    '''Processes each file in the directory concurrently and tracks the smallest file per unique identifier.'''
-
     file_count = len([f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))])
     logging.info(f'Found {file_count} files in input directory {input_dir}.')
 

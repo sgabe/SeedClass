@@ -148,15 +148,15 @@ def main():
     )
 
     parser.add_argument('-i', '--input', type=str, required=True,
-                        help='Input EMF file or directory to process.')
+                        help='input EMF file or directory to process')
     parser.add_argument('-o', '--output', type=str, default='output',
-                        help='Output folder to save the split files.')
+                        help='output folder to save the split files')
     parser.add_argument('-e', '--extension', type=str, default='.emf',
-                        help='File extension for the split files (defaults to .emf).')
+                        help='file extension for the split files (defaults to .emf)')
     parser.add_argument('-p', '--pieces', type=int, default=20,
-                        help='Number of records per split file (defaults to 20).')
+                        help='number of records per split file (defaults to 20)')
     parser.add_argument('--verbose', action='store_true',
-                        help='Enable verbose logging.')
+                        help='enable verbose logging')
 
     args = parser.parse_args()
 
