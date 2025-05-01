@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.4.2'
+__version__   = '0.4.3'
 __date__      = '2025/04/02'
 __copyright__ = 'Copyright (c) 2025 Gabor Seljan'
 __license__   = 'MIT'
@@ -207,6 +207,18 @@ def main():
     if not os.path.isdir(args.unknown):
         logging.error(f'Folder of unknown samples {args.unknown} does not exist or it is not a directory!')
         sys.exit(1)
+
+    if VERBOSE:
+        logging.info('Running in verbose mode')
+
+    if ENCODING:
+        logging.info(f'Using {ENCODING} encoding ({FEATURE_RANGE_MAX}) for feature scaling')
+
+    if VALIDATION:
+        logging.info(f'Using {N_SPLITS}-fold cross-validation for training')
+
+    if REGULARIZATION:
+        logging.info('Using L2 kernel regularization (0.00001) in Dense layers')
 
     dd = {}
     if args.negative:
