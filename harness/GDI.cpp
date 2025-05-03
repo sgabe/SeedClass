@@ -14,6 +14,8 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
     HENHMETAFILE hEmf = NULL;
     uint32_t sample_size = 0;
     char* sample_bytes = NULL;
+
+    IStream* stream = NULL;
     Gdiplus::Image* image = NULL;
     Gdiplus::Image* thumbnail = NULL;
     Gdiplus::Metafile* metafile = NULL;
@@ -23,7 +25,6 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
 
     if (!use_shared_memory)
     {
-        IStream* stream;
         SHCreateStreamOnFile(szArgList[2], NULL, &stream);
         image = Gdiplus::Image::FromStream(stream);
         metafile = new Gdiplus::Metafile(stream, hDC);
@@ -49,7 +50,7 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
             return 1;
         }
         memcpy(sample_bytes, shm_data + sizeof(uint32_t), sample_size);
-        IStream* stream = SHCreateMemStream(reinterpret_cast<BYTE*>(sample_bytes), sample_size);
+        stream = SHCreateMemStream(reinterpret_cast<BYTE*>(sample_bytes), sample_size);
         image = Gdiplus::Image::FromStream(stream);
         metafile = new Gdiplus::Metafile(stream, hDC);
     }
@@ -101,6 +102,7 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
     if (graphics) delete graphics;
     if (sample_bytes) free(sample_bytes);
     if (hEmf) DeleteEnhMetaFile(hEmf);
+    if (stream) stream->Release();
 
     LocalFree(szArgList);
 
