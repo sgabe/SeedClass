@@ -216,8 +216,8 @@ def main():
     finally:
         executor.shutdown(wait=True)
 
-        logging.info(f'Processed: {total['processed']}, Valid: {total['valid']}, '
-                     f'Invalid: {total['invalid']}, Moved: {total['moved']}, Skipped: {total['skipped']}')
+        logging.info(f"Processed: {total['processed']}, Valid: {total['valid']}, "
+                     f"Invalid: {total['invalid']}, Moved: {total['moved']}, Skipped: {total['skipped']}")
 
         sys.exit(1 if stop.is_set() else 0)
 
