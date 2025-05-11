@@ -114,7 +114,7 @@ def plot_confusion_metrics(metrics, history):
             plt.legend()
     plt.tight_layout()
     plt.show()
-    fig.savefig('figures/metrics-confusion.png', bbox_inches='tight')
+    fig.savefig(os.path.join('figures', 'learning', 'metrics-confusion.png'), bbox_inches='tight')
 
 
 def plot_prc(name, labels, predictions, **kwargs):
@@ -164,7 +164,7 @@ def plot_cross_val_essential_metrics(metrics, histories):
 
         plt.suptitle('Essential Metrics')
     plt.show()
-    fig.savefig('figures/metrics-cross-val-essential.png', bbox_inches='tight')
+    fig.savefig(os.path.join('figures', 'learning', 'metrics-cross-val-essential.png'), bbox_inches='tight')
 
 
 def plot_cross_val_confusion_metrics(metrics, histories):
@@ -189,4 +189,4 @@ def plot_cross_val_confusion_metrics(metrics, histories):
     plt.legend()
     plt.tight_layout()
     plt.show()
-    fig.savefig('figures/metrics-cross-val-confusion.png', bbox_inches='tight')
+    fig.savefig(os.path.join('figures', 'learning', 'metrics-cross-val-confusion.png'), bbox_inches='tight')
