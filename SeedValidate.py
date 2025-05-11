@@ -40,7 +40,7 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S',
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('SeedValidate.log', mode='w'),
+        logging.FileHandler('SeedValidate.log', mode='a'),
         logging.StreamHandler()
     ]
 )
