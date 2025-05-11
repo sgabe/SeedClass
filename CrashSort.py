@@ -2,14 +2,14 @@
 #!/usr/bin/env python
 
 """
-SeedSort is a Python script to analyze crash samples with BugID and sort them in a multi-threaded manner.
+CrashSort is a Python script to analyze crash samples with BugID and sort them in a multi-threaded manner.
 
 Example:
-    python SeedSort.py -i ./input_folder -o ./output_folder -t 8
+    python CrashSort.py -i ./input_folder -o ./output_folder -t 8
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.8.5'
+__version__   = '0.9.2'
 __date__      = '2025/04/24'
 __copyright__ = 'Copyright (c) 2025 Gabor Seljan'
 __license__   = 'MIT'
@@ -32,18 +32,18 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S',
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('SeedSort.log', mode='w'),
+        logging.FileHandler('CrashSort.log', mode='a'),
         logging.StreamHandler()
     ]
 )
 
 print('''
-                   _____               _  _____            _
-                  / ____|    v{}   | |/ ____|          | |
-                 | (___   ___  ___  __| | (___   ___  _ __| |_
-                  \\___ \\ / _ \\/ _ \\/ _` |\\___ \\ / _ \\| '__| __|
-                  ____) |  __/  __/ (_| |____) | (_) | |  | |_
-                 |_____/ \\___|\\___|\\__,_|_____/ \\___/|_|   \\__|
+                 _____                _      _____            _
+                / ____|    v{}     | |    / ____|          | |
+                | |     _ __ __ _ ___| |__ | (___   ___  _ __| |_
+                | |    | '__/ _` / __| '_ \ \___ \ / _ \| '__| __|
+                | |____| | | (_| \__ \ | | |____) | (_) | |  | |_
+                \_____|_|  \__,_|___/_| |_|_____/ \___/|_|   \__|
 
 '''.format(__version__))
 
@@ -54,7 +54,7 @@ def handle_exit_signal(signum, frame):
         stop.set()
 
 
-def run_bugid(file, files, crash_dir, clean_dir, lock):
+def run_bugid(file, files, crash_dir, valid_dir, lock):
     if stop.is_set():
         return
 
@@ -94,11 +94,11 @@ def run_bugid(file, files, crash_dir, clean_dir, lock):
         else:
             logging.error(f'File {os.path.basename(file)} with {size} bytes triggered a bug but failed to extract identifier information!')
     elif not stop.is_set():
-        shutil.move(file, os.path.join(clean_dir, os.path.basename(file)))
+        shutil.move(file, os.path.join(valid_dir, os.path.basename(file)))
         logging.warning(f'File {os.path.basename(file)} with {size} bytes did not trigger a bug.')
 
 
-def process_files(input_dir, crash_dir, clean_dir, max_threads):
+def process_files(input_dir, all_dir, valid_dir, max_threads):
     file_count = len([f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))])
     logging.info(f'Found {file_count} files in input directory {input_dir}.')
 
@@ -113,7 +113,7 @@ def process_files(input_dir, crash_dir, clean_dir, max_threads):
         if not os.path.isfile(file):
             logging.debug(f'Skipping non-file {file}.')
             return
-        run_bugid(file, files, crash_dir, clean_dir, lock)
+        run_bugid(file, files, all_dir, valid_dir, lock)
 
     try:
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
@@ -134,7 +134,6 @@ def process_files(input_dir, crash_dir, clean_dir, max_threads):
 
 
 def copy_unique_files(files, unique_dir):
-    '''Copies the smallest file for each unique identifier to the UNIQUE directory.'''
     for bugid, (file, size, function, library) in files.items():
         dst = os.path.join(unique_dir, os.path.basename(file))
         shutil.copy(file, dst)
@@ -144,8 +143,8 @@ def copy_unique_files(files, unique_dir):
 def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        description='Process files with BugID, track crashes, and store unique bug samples.',
-        prog='SeedSort'
+        description='Process crash samples with BugID and find the smallest sample for each unique bug.',
+        prog='CrashSort'
     )
 
     parser.add_argument('-i', '--input', required=True,
@@ -161,13 +160,13 @@ def main():
         logging.error(f'Input folder {args.input} does not exist or is not a directory!')
         sys.exit(1)
 
-    crash_dir = os.path.join(args.output, 'CRASH.all')
-    unique_dir = os.path.join(args.output, 'CRASH.unique')
-    clean_dir = os.path.join(args.output, 'CRASH.none')
+    all_dir = os.path.join(args.output, 'all')
+    unique_dir = os.path.join(args.output, 'unique')
+    valid_dir = os.path.join(args.output, 'none')
 
-    os.makedirs(crash_dir, exist_ok=True)
+    os.makedirs(all_dir, exist_ok=True)
     os.makedirs(unique_dir, exist_ok=True)
-    os.makedirs(clean_dir, exist_ok=True)
+    os.makedirs(valid_dir, exist_ok=True)
 
     signal.signal(signal.SIGINT, handle_exit_signal)
 
@@ -176,7 +175,7 @@ def main():
 
     try:
         total_files = len([f for f in os.listdir(args.input) if os.path.isfile(os.path.join(args.input, f))])
-        unique_bugs = process_files(args.input, crash_dir, clean_dir, max_threads)
+        unique_bugs = process_files(args.input, all_dir, valid_dir, max_threads)
 
         if unique_bugs and not stop.is_set():
             logging.info(f'Found {len(unique_bugs)} unique bugs across {total_files} files in total.')

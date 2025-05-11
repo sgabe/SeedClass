@@ -2,14 +2,14 @@
 #!/usr/bin/env python
 
 """
-SeedDistribute is a Python script to process a SeedSort log file and distribute crash samples based on bug occurrences.
+CrashDistribute is a Python script to process a CrashSort.log file and distribute crash samples based on bug occurrences.
 
 Example:
-    python SeedDistribute.py -l log_file -i ./input_folder -o ./output_folder -s size
+    python CrashDistribute.py -l log_file -i ./input_folder -o ./output_folder -s size
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.4.3'
+__version__   = '0.5.0'
 __date__      = '2025/04/25'
 __copyright__ = 'Copyright (c) 2025 Gabor Seljan'
 __license__   = 'MIT'
@@ -28,18 +28,18 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S',
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('SeedDistribute.log', mode='w'),
+        logging.FileHandler('CrashDistribute.log', mode='a'),
         logging.StreamHandler()
     ]
 )
 
 print('''
-           _____               _ _____  _     _        _ _           _
-          / ____|    v{}   | |  __ \\(_)   | |      (_) |         | |
-         | (___   ___  ___  __| | |  | |_ ___| |_ _ __ _| |__  _   _| |_ ___
-          \\___ \\ / _ \\/ _ \\/ _` | |  | | / __| __| '__| | '_ \\| | | | __/ _ \\
-          ____) |  __/  __/ (_| | |__| | \\__ \\ |_| |  | | |_) | |_| | ||  __/
-         |_____/ \\___|\\___|\\__,_|_____/|_|___/\\__|_|  |_|_.__/ \\__,_|\\__\\___|
+          _____               _     _____  _     _        _ _           _
+         / ____|    v{}   | |   |  __ \(_)   | |      (_) |         | |
+        | |     _ __ __ _ ___| |__ | |  | |_ ___| |_ _ __ _| |__  _   _| |_ ___
+        | |    | '__/ _` / __| '_ \| |  | | / __| __| '__| | '_ \| | | | __/ _ \\
+        | |____| | | (_| \__ \ | | | |__| | \__ \ |_| |  | | |_) | |_| | ||  __/
+         \_____|_|  \__,_|___/_| |_|_____/|_|___/\__|_|  |_|_.__/ \__,_|\__\___|
 '''.format(__version__))
 
 
@@ -108,7 +108,7 @@ def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description='Process a log file and optimize bug distribution across files.',
-        prog='SeedDistribute'
+        prog='CrashDistribute'
     )
 
     parser.add_argument('-l', '--log', required=True,

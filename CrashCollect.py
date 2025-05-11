@@ -2,14 +2,14 @@
 #!/usr/bin/env python
 
 """
-SeedCollect is a Python script to gather all crash samples from the output directories of multiple WinAFL fuzzer instances.
+CrashCollect is a Python script to gather unique crash samples from the output directories of multiple WinAFL fuzzer instances.
 
 Example:
-    python SeedCollect.py -i ./input_folder -o ./output_folder
+    python CrashCollect.py -i ./input_folder -o ./output_folder
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.1.2'
+__version__   = '0.2.0'
 __date__      = '2025/04/24'
 __copyright__ = 'Copyright (c) 2025 Gabor Seljan'
 __license__   = 'MIT'
@@ -27,18 +27,18 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S',
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('SeedCollect.log', mode='w'),
+        logging.FileHandler('CrashCollect.log', mode='a'),
         logging.StreamHandler()
     ]
 )
 
 print('''
-                   _____               _  _____      _ _           _
-                  / ____|    v{}   | |/ ____|    | | |         | |
-                 | (___   ___  ___  __| | |     ___ | | | ___  ___| |_
-                  \\___ \\ / _ \\/ _ \\/ _` | |    / _ \\| | |/ _ \\/ __| __|
-                  ____) |  __/  __/ (_| | |___| (_) | | |  __/ (__| |_
-                 |_____/ \\___|\\___|\\__,_|\\_____\\___/|_|_|\\___|\\___|\\__|
+                  _____               _      _____      _ _           _
+                 / ____|    v{}   | |    / ____|    | | |         | |
+                | |     _ __ __ _ ___| |__ | |     ___ | | | ___  ___| |_
+                | |    | '__/ _` / __| '_ \| |    / _ \| | |/ _ \/ __| __|
+                | |____| | | (_| \__ \ | | | |___| (_) | | |  __/ (__| |_
+                 \_____|_|  \__,_|___/_| |_|\_____\___/|_|_|\___|\___|\__|
 '''.format(__version__))
 
 
@@ -87,8 +87,8 @@ def process_folder(input_path, output_path, extension):
 def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        description='Recursively collects crash samples from an output directory of a WinAFL fuzzer instance.',
-        prog='SeedCollect'
+        description='Recursively collects unique crash samples from an output directory of a WinAFL fuzzer instance.',
+        prog='CrashCollect'
     )
 
     parser.add_argument('-i', '--input', required=True,
