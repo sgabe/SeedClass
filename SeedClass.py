@@ -326,7 +326,7 @@ def main():
                 if v not in uniques:
                     uniques.add(v)
                     best.append(v)
-                if len(best) == 21:
+                if len(best) == 20:
                     break
 
             indices = [flats.index(v) for v in best]
