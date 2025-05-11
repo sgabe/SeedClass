@@ -2,7 +2,7 @@
 #!/usr/bin/env python
 
 """
-SeedSplit is a Python script to split EMF metafiles into smaller pieces based on the specified number of records.
+SeedSplit is a Python script to split valid metafiles into smaller pieces based on the specified number of records.
 
 Example:
     python SeedSplit.py -i input.emf -o output_folder -e .emf -p 24
