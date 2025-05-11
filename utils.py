@@ -1,6 +1,7 @@
 # Copyright (c) 2025 Gabor Seljan. All rights reserved.
 # Licensed under the MIT License.
 
+import io
 import os
 import config
 import numpy as np
@@ -8,6 +9,7 @@ import pandas as pd
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
+from zipfile import ZipFile
 from base64 import b64encode
 from sklearn.metrics import precision_recall_curve
 
@@ -20,8 +22,8 @@ np.set_printoptions(precision=16)
 pd.set_option('display.precision', 16)
 
 
-def load_data(data, dir, label=config.LABEL_NEGATIVE):
-    def process(path):
+def load_data(data, archive, label=config.LABEL_NEGATIVE):
+    def process(data):
         # Normalize decimal numbers.
         def scale(X):
             return [(i - min(X)) / (max(X) - min(X)) * config.FEATURE_RANGE_MAX for i in X]
@@ -30,8 +32,6 @@ def load_data(data, dir, label=config.LABEL_NEGATIVE):
         def chunks(lst, n):
             return [lst[i:i + n] for i in range(0, len(lst), n)]
 
-        with open(path, 'rb') as f:
-            data = f.read()
         # Encode file content via Base64 and map each byte using CHARMAP.
         encoded = [config.CHARMAP.get(chr(i), 0) for i in b64encode(data)]
 
@@ -49,16 +49,21 @@ def load_data(data, dir, label=config.LABEL_NEGATIVE):
 
     good, bad = [], []
     try:
-        print('Processing directory {} containing samples for label {}'.format(os.path.join(os.getcwd(), dir), label))
-        for file in [f for f in os.listdir(os.path.join(os.getcwd(), dir)) if f.lower().endswith('.emf')]:
-            features = process(os.path.join(os.getcwd(), dir, file))
-            features[:0] = [label]
-            if len(features) == 257: # Ignore too big files
-                good.append(len(features))
-                data.update({file: features})
-            else:
-                bad.append(len(features))
-                print('Ignoring {} which has {} features and is {} bytes'.format(file, len(features), os.path.getsize(os.path.join(os.getcwd(), dir, file))))
+        print('Processing archive {} containing samples for label {}'.format(archive, label))
+        with open(archive, 'rb') as file:
+            stream = io.BytesIO(file.read())
+        with ZipFile(stream, 'r') as zip:
+            for info in zip.infolist():
+                if info.filename.lower().endswith('.emf'):
+                    with zip.open(info.filename) as f:
+                        features = process(f.read())
+                        features[:0] = [label]
+                        if len(features) == 257: # Ignore too big files
+                            good.append(len(features))
+                            data.update({os.path.basename(info.filename): features})
+                        else:
+                            bad.append(len(features))
+                            print('Ignoring {} which has {} features and is {} bytes'.format(os.path.basename(info.filename), len(features), info.file_size))
     except FileNotFoundError:
         print('The system cannot find the path specified!')
     except Exception as e:

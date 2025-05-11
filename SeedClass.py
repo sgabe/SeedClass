@@ -5,15 +5,16 @@
 SeedClass is an experimental machine learning project employing binary classification to predict whether fuzzing a specific seed file will lead to a vulnerability.
 
 Example:
-    python SeedClass.py -N ./negative_samples -P ./positive_samples -U ./unknown_samples --epochs 20 --batch-size 64 --learning-rate 0.0005 --validation --verbose
+    python SeedClass.py -N ./negative.zip -P ./positive.zip -U ./unknown.zip --epochs 20 --batch-size 64 --learning-rate 0.0005 --validation --verbose
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.4.3'
+__version__   = '0.5.0'
 __date__      = '2025/04/02'
 __copyright__ = 'Copyright (c) 2025 Gabor Seljan'
 __license__   = 'MIT'
 
+import io
 import os
 import sys
 import heapq
@@ -21,7 +22,8 @@ import logging
 import numpy as np
 import pandas as pd
 
-from shutil import copy2
+from shutil import copyfileobj
+from zipfile import ZipFile
 from base64 import b64encode
 
 from tensorflow.keras import Input
@@ -67,13 +69,13 @@ parser = ArgumentParser(
 )
 
 parser.add_argument('-N', '--negative', dest='negative',
-                    help='path to directory containing negative samples')
+                    help='path to archive containing negative samples')
 parser.add_argument('-P', '--positive', dest='positive',
-                    help='path to directory containing positive samples')
+                    help='path to archive containing positive samples')
 parser.add_argument('-U', '--unknown', dest='unknown',
-                    help='path to directory containing unknown samples')
+                    help='path to archive containing unknown samples')
 parser.add_argument('-S', '--selected', dest='selected',
-                    help='path to directory containing selected samples')
+                    help='path to archive containing selected samples')
 
 parser.add_argument('-E', '--encoding', dest='encoding', choices=['simple', 'product'], default='simple',
                     help='encoding method to use (simple or product)')
@@ -143,8 +145,8 @@ CHARMAP           = {
 }
 
 
-def load_data(data, dir, label=LABEL_NEGATIVE):
-    def process(path):
+def load_data(data, archive, label=LABEL_NEGATIVE):
+    def process(data):
 
         # Normalize decimal numbers.
         def scale(X):
@@ -154,8 +156,6 @@ def load_data(data, dir, label=LABEL_NEGATIVE):
         def chunks(lst, n):
             return [lst[i:i + n] for i in range(0, len(lst), n)]
 
-        with open(path, 'rb') as f:
-            data = f.read()
         # Encode file content via Base64 and map each byte using CHARMAP.
         encoded = [CHARMAP.get(chr(i), 0) for i in b64encode(data)]
 
@@ -173,16 +173,21 @@ def load_data(data, dir, label=LABEL_NEGATIVE):
 
     good, bad = [], []
     try:
-        logging.info(f'Processing directory {os.path.join(os.getcwd(), dir)} containing samples for label {label}')
-        for file in [f for f in os.listdir(os.path.join(os.getcwd(), dir)) if f.lower().endswith('.emf')]:
-            features = process(os.path.join(os.getcwd(), dir, file))
-            features.insert(0, label)
-            if len(features) == 257: # Ignore too big files
-                good.append(len(features))
-                data.update({file: features})
-            else:
-                bad.append(len(features))
-                logging.warning(f'Ignoring {file} which has {len(features)} features and is {os.path.getsize(os.path.join(os.getcwd(), dir, file))} bytes')
+        logging.info('Processing archive {} containing samples for label {}'.format(archive, label))
+        with open(archive, 'rb') as file:
+            stream = io.BytesIO(file.read())
+        with ZipFile(stream, 'r') as zip:
+            for info in zip.infolist():
+                if info.filename.lower().endswith('.emf'):
+                    with zip.open(info.filename) as f:
+                        features = process(f.read())
+                        features[:0] = [label]
+                        if len(features) == 257: # Ignore too big files
+                            good.append(len(features))
+                            data.update({os.path.basename(info.filename): features})
+                        else:
+                            bad.append(len(features))
+                            print('Ignoring {} which has {} features and is {} bytes'.format(os.path.basename(info.filename), len(features), info.file_size))
     except FileNotFoundError:
         logging.error('The system cannot find the specified path!')
     except Exception as e:
@@ -196,16 +201,16 @@ def load_data(data, dir, label=LABEL_NEGATIVE):
 
 
 def main():
-    if not os.path.isdir(args.negative):
-        logging.error(f'Folder of negative samples {args.negative} does not exist or it is not a directory!')
+    if not os.path.isfile(args.negative):
+        logging.error(f'Archive of negative samples {args.negative} does not exist or it is not a file!')
         sys.exit(1)
 
-    if not os.path.isdir(args.positive):
-        logging.error(f'Folder of positive samples {args.positive} does not exist or it is not a directory!')
+    if not os.path.isfile(args.positive):
+        logging.error(f'Archive of positive samples {args.positive} does not exist or it is not a file!')
         sys.exit(1)
 
-    if not os.path.isdir(args.unknown):
-        logging.error(f'Folder of unknown samples {args.unknown} does not exist or it is not a directory!')
+    if not os.path.isfile(args.unknown):
+        logging.error(f'Archive of unknown samples {args.unknown} does not exist or it is not a file!')
         sys.exit(1)
 
     if VERBOSE:
@@ -346,7 +351,17 @@ def main():
             logging.info(filename)
             if args.selected:
                 os.makedirs(args.selected, exist_ok=True)
-                copy2(os.path.join(args.unknown, filename), os.path.join(args.selected, filename))
+                with ZipFile(args.unknown, 'r') as fzip:
+                    selected = None
+                    for name in fzip.namelist():
+                        if name.endswith(f'{filename}'):
+                            selected = name
+                            break
+                    if selected:
+                        with fzip.open(selected) as fsrc:
+                            dst = os.path.join(args.selected, filename)
+                            with open(dst, 'wb') as fdst:
+                                copyfileobj(fsrc, fdst)
     except:
         logging.error('Something, somewhere went terribly wrong!')
         pass
