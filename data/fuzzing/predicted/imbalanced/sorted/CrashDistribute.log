@@ -1,0 +1,12 @@
+2025-05-11 00:03:00 - INFO - Summary of bugs identified in the crash samples:
+2025-05-11 00:03:00 - INFO - Count: 2464   ID: f33.8ed      Function: DpRegion::Set                            Library: gdiplus.dll         
+2025-05-11 00:03:00 - INFO - Count: 847    ID: 8ed.260      Function: DpRegion::And                            Library: gdiplus.dll         
+2025-05-11 00:03:00 - INFO - Count: 104    ID: f33.cf7      Function: DpRegion::Set                            Library: gdiplus.dll         
+2025-05-11 00:03:00 - INFO - Count: 32     ID: eb3.7fb      Function: EmfEnumState::Rectangle                  Library: gdiplus.dll         
+2025-05-11 00:03:00 - INFO - Count: 10     ID: 3ce.9b5      Function: GpStringFormat::SetData                  Library: gdiplus.dll         
+2025-05-11 00:03:00 - INFO - Count: 4      ID: 0e5.7fb      Function: EmfEnumState::ExtCreatePen               Library: gdiplus.dll         
+2025-05-11 00:03:00 - INFO - Count: 2      ID: d05.7fb      Function: EmfEnumState::CreatePen                  Library: gdiplus.dll         
+2025-05-11 00:03:00 - INFO - Count: 2      ID: 8ed.2b5      Function: DpRegion::And                            Library: gdiplus.dll         
+2025-05-11 00:03:00 - INFO - Count: 2      ID: 8ed.13f      Function: DpRegion::And                            Library: gdiplus.dll         
+2025-05-11 00:03:00 - INFO - Count: 1      ID: efe.7fb      Function: EmfEnumState::ExtCreateFontIndirect      Library: gdiplus.dll         
+2025-05-11 00:03:00 - INFO - Count: 1      ID: 6e7.9de      Function: GlyphDataElement<...>::GetExistingGlyphs Library: dwrite.dll          

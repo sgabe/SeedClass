@@ -1,0 +1,95 @@
+2025-05-10 17:36:50 - INFO - Using 24 threads for processing.
+2025-05-10 17:36:50 - INFO - Found 85 files in input directory D:\Crashes\Minimized.
+2025-05-10 17:36:55 - WARNING - File 088363A5B2781282E344DABBC0F72EA39EDBFC5681BB1753F4A6AEF7DE9520D8.emf with 634 bytes did not trigger a bug.
+2025-05-10 17:36:55 - INFO - File 3DDA7A452F0E1DCE3CBE6CEB393793EA092E8F35FFAE2BAA5E3EB182C580A379.emf with 609 bytes triggered bug db3.f44 in Div64_Asm within gdiplus.dll.
+2025-05-10 17:36:55 - INFO - File 3359A77937677F9574F27A48FB053C64FFB22535B7E7F212931A792E2AC92768.emf with 458 bytes triggered bug d05.7fb in EmfEnumState::CreatePen within gdiplus.dll.
+2025-05-10 17:36:55 - INFO - File 0D9E164D63D4E3A9682ABDDFC95200EA9986118D82E9CD9BF9CBE4B1231AF0A5.emf with 631 bytes triggered bug 3ce.9b5 in GpStringFormat::SetData within gdiplus.dll.
+2025-05-10 17:36:56 - INFO - File 3877B8E32E626CE037C026BE4D87C372996F049E6CE9FD9735A2C29E85746DB9.emf with 608 bytes triggered bug eb3.7fb in EmfEnumState::Rectangle within gdiplus.dll.
+2025-05-10 17:36:56 - INFO - File 27269A9B651BD7B895958D836EE2EFE97A1B6174F918D9449AE5CF475AC9188B.emf with 416 bytes triggered bug efe.7fb in EmfEnumState::ExtCreateFontIndirect within gdiplus.dll.
+2025-05-10 17:36:56 - INFO - File 302770763930BE7F112FEDFD5BDB5F9E2E4D6FC1FC60E789A022D48C5D9ED73F.emf with 608 bytes triggered bug efe.7fb in EmfEnumState::ExtCreateFontIndirect within gdiplus.dll.
+2025-05-10 17:36:56 - INFO - File 43C7B5AED11DD362978ACE6550C2DB098216E828BC866A0C84C653A248C752E8.emf with 609 bytes triggered bug db3.f44 in Div64_Asm within gdiplus.dll.
+2025-05-10 17:36:56 - INFO - File 354947CB2344391BEDA1E02CB318BBDB01CF0C7F280757E577F3A31648FBCEB7.emf with 608 bytes triggered bug eb3.7fb in EmfEnumState::Rectangle within gdiplus.dll.
+2025-05-10 17:36:56 - INFO - File 3932883806FE02A020A0F7522A7106071CB361BADE304FEA3DB2A2113A20F572.emf with 606 bytes triggered bug d05.7fb in EmfEnumState::CreatePen within gdiplus.dll.
+2025-05-10 17:36:56 - INFO - File 33F45BBDDD20FA0DBE47444BFA19666341357250BAD32031FC80B9638FBE06FC.emf with 608 bytes triggered bug 0e5.7fb in EmfEnumState::ExtCreatePen within gdiplus.dll.
+2025-05-10 17:36:56 - INFO - File 3B63C9A13801EBDB9A9824BB4168ABC8410BC9E74406CB0BDBA29AA5FC074A3A.emf with 614 bytes triggered bug 0e5.7fb in EmfEnumState::ExtCreatePen within gdiplus.dll.
+2025-05-10 17:36:56 - INFO - File 2C6E4CE7090CFDE0D211DFE64B5C31F0DB8CDAD39603DD12AA695358C93064F5.emf with 1127 bytes triggered bug 3ce.9b5 in GpStringFormat::SetData within gdiplus.dll.
+2025-05-10 17:36:56 - INFO - File 1FC6F650455D6A953DDA3B83C3CA00BFB96B3CC793C5DBD70DA6609D6806C1BC.emf with 1108 bytes triggered bug 0e5.7fb in EmfEnumState::ExtCreatePen within gdiplus.dll.
+2025-05-10 17:36:56 - INFO - File 325FD6D17CD8C5789643F10BCB299DAE7CE2E0031E6CB36AF0131CF2E0C28A0C.emf with 614 bytes triggered bug 3ce.9b5 in GpStringFormat::SetData within gdiplus.dll.
+2025-05-10 17:36:56 - INFO - File 434CDAFC8F996C869840C1BE98A267BA3E0097760F262DB97EE11C5DA56458A9.emf with 420 bytes triggered bug efe.7fb in EmfEnumState::ExtCreateFontIndirect within gdiplus.dll.
+2025-05-10 17:36:57 - INFO - File 4495893CA7CC18F7EC0EEB890C2FCA40E375363F30F52CA8564A007D7330EBB7.emf with 609 bytes triggered bug db3.f44 in Div64_Asm within gdiplus.dll.
+2025-05-10 17:36:57 - INFO - File 41312A7C8107C41E4C793BFB707D31C59B4B18B12DF3687AFF443672E1C54A40.emf with 665 bytes triggered bug 3ce.9b5 in GpStringFormat::SetData within gdiplus.dll.
+2025-05-10 17:36:57 - INFO - File 36CB5448523B79A8343D32506DF7C50CAAADD56662637228FBF3728F6F2FB9EC.emf with 608 bytes triggered bug eb3.7fb in EmfEnumState::Rectangle within gdiplus.dll.
+2025-05-10 17:36:57 - INFO - File 248180B53FD3DAB5C3516CFA904C59009595457233EAF372219BFD7C5913489E.emf with 1104 bytes triggered bug eb3.7fb in EmfEnumState::Rectangle within gdiplus.dll.
+2025-05-10 17:36:57 - INFO - File 1DF1E335EE286E96E6E9CFB242CD4B3959780BB9447DC07DAC3057A2CA0CB3CD.emf with 608 bytes triggered bug eb3.7fb in EmfEnumState::Rectangle within gdiplus.dll.
+2025-05-10 17:36:57 - INFO - File 1FB8761079C0006AE28CAF3B3DB609EB0D2E872502544C514744B244FC895C88.emf with 608 bytes triggered bug eb3.7fb in EmfEnumState::Rectangle within gdiplus.dll.
+2025-05-10 17:36:57 - INFO - File 1D46F5FCCBD871B54E558FDD9B0E74F8F7940B7280F42FD4BFAB7682975432B6.emf with 148 bytes triggered bug efe.7fb in EmfEnumState::ExtCreateFontIndirect within gdiplus.dll.
+2025-05-10 17:36:58 - INFO - File 065061994326A703C0175D37E4FBF24E51820291B321DF0586EF517FD6A5098C.emf with 608 bytes triggered bug eb3.7fb in EmfEnumState::Rectangle within gdiplus.dll.
+2025-05-10 17:37:00 - INFO - File 4E053FB049D0F4FB76CE75ECF6923988881E73C6B4B6DEDB8D6E27095F0BB572.emf with 1104 bytes triggered bug 0e5.7fb in EmfEnumState::ExtCreatePen within gdiplus.dll.
+2025-05-10 17:37:01 - INFO - File 5DB8EA96225476AFDE79DEA05D9EA5CB1E031EE8AEAC8600E8FC0186C992CC89.emf with 609 bytes triggered bug db3.f44 in Div64_Asm within gdiplus.dll.
+2025-05-10 17:37:01 - INFO - File 54CDB8BC41CFE35B0033EFEAB963DA1DC01A13E96BC4C52D92636509B61B40A1.emf with 608 bytes triggered bug eb3.7fb in EmfEnumState::Rectangle within gdiplus.dll.
+2025-05-10 17:37:01 - INFO - File 60013BF2B228081A2641243B4E1DE30D92A10054A4B4A7AF6CB3BD4ECAE7E45C.emf with 458 bytes triggered bug d05.7fb in EmfEnumState::CreatePen within gdiplus.dll.
+2025-05-10 17:37:01 - INFO - File 46A4DE23BE4ED8CD9A09F5592B4E2BFF0B87B7389A94BD20CE6CFB8148941ECA.emf with 608 bytes triggered bug eb3.7fb in EmfEnumState::Rectangle within gdiplus.dll.
+2025-05-10 17:37:02 - INFO - File 562CF2655E39BE51E092CE08FFAF1319342C048E222CA9C4B436410DCE8CE2CB.emf with 172 bytes triggered bug 0e5.7fb in EmfEnumState::ExtCreatePen within gdiplus.dll.
+2025-05-10 17:37:02 - INFO - File 4B1FEF835705C272076900864C8E37B2F115202A648D76F07D82828E956EAF72.emf with 601 bytes triggered bug efe.7fb in EmfEnumState::ExtCreateFontIndirect within gdiplus.dll.
+2025-05-10 17:37:02 - INFO - File 6005AE6A6C807410FCD00AFFD8002DE22C20B51374EBD06247CFFB7CF7C9DD38.emf with 609 bytes triggered bug 3ce.9b5 in GpStringFormat::SetData within gdiplus.dll.
+2025-05-10 17:37:02 - INFO - File 6F2AF4FBCD8049A28DEE5820821CC654935DF7ADD74A67981B727B02DC00037F.emf with 418 bytes triggered bug 0e5.7fb in EmfEnumState::ExtCreatePen within gdiplus.dll.
+2025-05-10 17:37:02 - INFO - File 759AB7CF5B7F596F705ADA660C4F9865AF3C7C9E13A39603767ED2824818D298.emf with 609 bytes triggered bug db3.f44 in Div64_Asm within gdiplus.dll.
+2025-05-10 17:37:02 - INFO - File 7BD4F2B580F85E0355B0C0B622BAC6BD01257DF702728503CCA695E09CD64C96.emf with 624 bytes triggered bug db3.f44 in Div64_Asm within gdiplus.dll.
+2025-05-10 17:37:02 - INFO - File 61AD65DF0571F54A96B1E7F2356753E5E01BBBE53B5DF2A6FFD404229BDFA96D.emf with 612 bytes triggered bug eb3.7fb in EmfEnumState::Rectangle within gdiplus.dll.
+2025-05-10 17:37:02 - INFO - File 8301C85DA64B9BFCBF0FBACAC58E7A143AE9CFB92D677854D306EF2592A052FD.emf with 618 bytes triggered bug 3ce.9b5 in GpStringFormat::SetData within gdiplus.dll.
+2025-05-10 17:37:02 - INFO - File 6E81D1FA89DD6D3B0C0F4DD06BE5EDCE25AA7A72A7AC3086722CBD35AFF2593C.emf with 144 bytes triggered bug eb3.7fb in EmfEnumState::Rectangle within gdiplus.dll.
+2025-05-10 17:37:02 - INFO - File 67A81A129652813415C27A63C55FEBC85E001C45BACDEF777ABA30805A870530.emf with 645 bytes triggered bug 3ce.9b5 in GpStringFormat::SetData within gdiplus.dll.
+2025-05-10 17:37:03 - INFO - File 72008D84B11D6A8252CBC09030EA0DC0013379DF1AB92352A89628F90F191124.emf with 668 bytes triggered bug d05.7fb in EmfEnumState::CreatePen within gdiplus.dll.
+2025-05-10 17:37:03 - INFO - File 798451A3B9D3F063EA57D679297D1B6106AFBC522DED2584A832F73B9C9E9A20.emf with 725 bytes triggered bug d05.7fb in EmfEnumState::CreatePen within gdiplus.dll.
+2025-05-10 17:37:03 - INFO - File 6C8451AACFB0F155F982D1258BFE646104F1C4F740CA0A46EEB3BFD1E19510BB.emf with 256 bytes triggered bug 0e5.7fb in EmfEnumState::ExtCreatePen within gdiplus.dll.
+2025-05-10 17:37:03 - INFO - File 7FB267418ADE1C8475FDF6F8B54B5D23DB204776FD4D4970179E2FC3E21068F7.emf with 428 bytes triggered bug 520.506 in NamedEscape within gdi32full.dll.
+2025-05-10 17:37:03 - INFO - File 774A7E0B28B56DC88335830F18ACED6F153A22E7E8C344D1249CA53A4375358B.emf with 416 bytes triggered bug 0e5.7fb in EmfEnumState::ExtCreatePen within gdiplus.dll.
+2025-05-10 17:37:03 - INFO - File 6E88444C66869B50321D5F8E67A0E0651BDC06C01DAF6FD0EC1B2424DF8770C3.emf with 422 bytes triggered bug 0e5.7fb in EmfEnumState::ExtCreatePen within gdiplus.dll.
+2025-05-10 17:37:03 - INFO - File 8465C33BFA0075D033711C1830DFC7E3FA10940513152574EE9725C0C5221CDD.emf with 144 bytes triggered bug 0e5.7fb in EmfEnumState::ExtCreatePen within gdiplus.dll.
+2025-05-10 17:37:03 - INFO - File 639DAF78A2EC48724DC9D11E651B4D185741DDA226CB43D0293CCC07B4E10676.emf with 416 bytes triggered bug efe.7fb in EmfEnumState::ExtCreateFontIndirect within gdiplus.dll.
+2025-05-10 17:37:03 - INFO - File 7DDDD1B2F262B832CDD6B461AEC6D603FAECF741CB8323B86733D7CEBDC3CFFE.emf with 416 bytes triggered bug efe.7fb in EmfEnumState::ExtCreateFontIndirect within gdiplus.dll.
+2025-05-10 17:37:05 - INFO - File 846C3E962F0F66630E2D13B196F9E284936B117A6149787D504BCFC4949B11FC.emf with 611 bytes triggered bug db3.f44 in Div64_Asm within gdiplus.dll.
+2025-05-10 17:37:06 - INFO - File 85127FD786E5599DE4D1E7EB6F1B5CFED7293E262538859534079A76712177F2.emf with 417 bytes triggered bug 0e5.7fb in EmfEnumState::ExtCreatePen within gdiplus.dll.
+2025-05-10 17:37:06 - INFO - File 85B3735AACE47D19AD7FC22CFE15717000781DBA8205A4823287D5B6E2AD21DC.emf with 458 bytes triggered bug d05.7fb in EmfEnumState::CreatePen within gdiplus.dll.
+2025-05-10 17:37:07 - INFO - File 9992D2C09306100EC455EF994AB33DE5D0158B9C9D17442BC52952F01BAF2825.emf with 620 bytes triggered bug 3ce.9b5 in GpStringFormat::SetData within gdiplus.dll.
+2025-05-10 17:37:07 - INFO - File A23D82BD81AE783BD7BC51D0703CAA4FAB28E14BE3D2549E3ED66DF62C4BDC9F.emf with 608 bytes triggered bug eb3.7fb in EmfEnumState::Rectangle within gdiplus.dll.
+2025-05-10 17:37:07 - INFO - File A390F3B1FEDF1F0BB51706A2A9DD9F5060D7BECFA9D482C7162541354313E863.emf with 400 bytes triggered bug 520.506 in NamedEscape within gdi32full.dll.
+2025-05-10 17:37:07 - INFO - File 871372EBE6256BEBBCA04DCC6DB3D57F2DB3A34F17D86D0A7769E8B29C1FEFD4.emf with 697 bytes triggered bug 3ce.9b5 in GpStringFormat::SetData within gdiplus.dll.
+2025-05-10 17:37:07 - INFO - File A07E6CD8B761B86338494993B963144BACA64753FC9960473F8ABE1CFFC3BC2E.emf with 488 bytes triggered bug 520.506 in NamedEscape within gdi32full.dll.
+2025-05-10 17:37:07 - INFO - File 9EABCD8AC2D51A9C2E678A6ACA49B3467D49EDE5F197FBCFEA599C38B4DAC43B.emf with 416 bytes triggered bug 520.506 in NamedEscape within gdi32full.dll.
+2025-05-10 17:37:08 - INFO - File BBC44E3BB257FA411D01319B6990AAF1ED50AC8AFC9C761D1581F91B8613823B.emf with 1104 bytes triggered bug 520.506 in NamedEscape within gdi32full.dll.
+2025-05-10 17:37:08 - INFO - File C2615A640F6E3078A91BC0E730F2B57D010692AF574104407B33B317D3A002D6.emf with 613 bytes triggered bug db3.f44 in Div64_Asm within gdiplus.dll.
+2025-05-10 17:37:09 - INFO - File C193D3DD7C73BF945F704F87C8D563114EE55A0DF5EBA391BC8DD55FBD7F1578.emf with 612 bytes triggered bug db3.f44 in Div64_Asm within gdiplus.dll.
+2025-05-10 17:37:09 - INFO - File B2807F2E12B00D774E0EF144DF78C68A52380A2AF973D91F1E2B2817CE92D20A.emf with 716 bytes triggered bug db3.f44 in Div64_Asm within gdiplus.dll.
+2025-05-10 17:37:09 - INFO - File CC954B3B5BC3F6FCFC4365F9931F3B1787350C4E6729F2CE7A16EA48E556F316.emf with 608 bytes triggered bug 0e5.7fb in EmfEnumState::ExtCreatePen within gdiplus.dll.
+2025-05-10 17:37:09 - INFO - File A918BA7FFE7D1163F131FA6B0AF45B4FDAAC1A4DB8D41D8533E2525BDEE3707F.emf with 608 bytes triggered bug 0e5.7fb in EmfEnumState::ExtCreatePen within gdiplus.dll.
+2025-05-10 17:37:09 - INFO - File C2FA623F9D3D7B02879E7964F537824A0BDD7C6091EE162B2CFFB9C0C4FDB76E.emf with 608 bytes triggered bug 0e5.7fb in EmfEnumState::ExtCreatePen within gdiplus.dll.
+2025-05-10 17:37:09 - INFO - File BEACFDBD3BFA8B5D183F9343F6AFA2926EBC94780DB14E5FE6D89291682F0DD0.emf with 537 bytes triggered bug 0e5.7fb in EmfEnumState::ExtCreatePen within gdiplus.dll.
+2025-05-10 17:37:10 - INFO - File D9A8B92568B5B5DB53886BAE2217BED0E84BAFC1AEB0F579C1109C3E5357D7DC.emf with 608 bytes triggered bug eb3.7fb in EmfEnumState::Rectangle within gdiplus.dll.
+2025-05-10 17:37:10 - INFO - File AA8092B1884B7B68330D1BFBCF911AA74F7CFCBDEE32AA4C5B051A6B1E957EDF.emf with 608 bytes triggered bug eb3.7fb in EmfEnumState::Rectangle within gdiplus.dll.
+2025-05-10 17:37:10 - INFO - File AFE0A94DEE24FFA1109C5711FF6210C6955C7E62E8A2DB66B3B6969307F1C057.emf with 608 bytes triggered bug eb3.7fb in EmfEnumState::Rectangle within gdiplus.dll.
+2025-05-10 17:37:10 - INFO - File B738E1C3FD0030DBBA53BFC29F62C9B423F655E46CE99B71765FB0C33A44C2A2.emf with 608 bytes triggered bug eb3.7fb in EmfEnumState::Rectangle within gdiplus.dll.
+2025-05-10 17:37:10 - INFO - File C7B560260F9324A2A39C9FF8D32A9A9A82EA7CC73BC3D611E35C5DF238506B12.emf with 256 bytes triggered bug eb3.7fb in EmfEnumState::Rectangle within gdiplus.dll.
+2025-05-10 17:37:10 - INFO - File D8971F737FC0788C2DEEC8C751784F4B9FC5EDA36DD468A2CA37D4284FC5AFE6.emf with 704 bytes triggered bug eb3.7fb in EmfEnumState::Rectangle within gdiplus.dll.
+2025-05-10 17:37:10 - INFO - File ABDF66FD981047EC411638F11DB6AA5563CECB2595CC113C089CEB11731FB5EA.emf with 416 bytes triggered bug 520.506 in NamedEscape within gdi32full.dll.
+2025-05-10 17:37:10 - INFO - File DF033BC9F0BCAD01BA3260D0CF7DBE7520705D227DB5533D2C0D6F75A7BE8D99.emf with 609 bytes triggered bug db3.f44 in Div64_Asm within gdiplus.dll.
+2025-05-10 17:37:10 - INFO - File DD3D245F3200EA5BE34217E27B97558E4667907B2FA3EB60E3CA1BD006161837.emf with 416 bytes triggered bug efe.7fb in EmfEnumState::ExtCreateFontIndirect within gdiplus.dll.
+2025-05-10 17:37:11 - INFO - File F2B681870C448F473A391E052257D24489EB98505B91475B7AA281E320860842.emf with 613 bytes triggered bug db3.f44 in Div64_Asm within gdiplus.dll.
+2025-05-10 17:37:11 - INFO - File E0AD36E43BD32379C131F6AE6A462A56A183C89F30C812ECC4543A09ECDE5AC2.emf with 608 bytes triggered bug eb3.7fb in EmfEnumState::Rectangle within gdiplus.dll.
+2025-05-10 17:37:11 - INFO - File E943910CEDCC4D05D74D7F5A66DD5DA2E72976E74410CF2DC881A59C12BA8FEC.emf with 144 bytes triggered bug 0e5.7fb in EmfEnumState::ExtCreatePen within gdiplus.dll.
+2025-05-10 17:37:12 - INFO - File F7DD03B7475F9382B223404F48575BF4857B3F26E789A6834E42E715F8AEE393.emf with 608 bytes triggered bug eb3.7fb in EmfEnumState::Rectangle within gdiplus.dll.
+2025-05-10 17:37:12 - INFO - File E32E78CD0576BDFBA692022AD32751761DD1CD4DBE4E37F51C9B2C777EFB662E.emf with 608 bytes triggered bug eb3.7fb in EmfEnumState::Rectangle within gdiplus.dll.
+2025-05-10 17:37:12 - INFO - File F7BB5E0E27692E0ACE4219347E6C226F3FE83268832610A53E086585B1534F97.emf with 704 bytes triggered bug 520.506 in NamedEscape within gdi32full.dll.
+2025-05-10 17:37:12 - INFO - File EFA1AFF3B38239029756A7CA9FE6F999113DD1B9C543CE2D217DECBBDD33B010.emf with 608 bytes triggered bug eb3.7fb in EmfEnumState::Rectangle within gdiplus.dll.
+2025-05-10 17:37:12 - INFO - File FCC42978ECD48A89543101663580D906BEDC0D2250E335D183A23E859455D6FE.emf with 613 bytes triggered bug db3.f44 in Div64_Asm within gdiplus.dll.
+2025-05-10 17:37:12 - INFO - File F91346D8D797D189FD7B60F748D900BA89FC2E1C39F0F26D4723F5410A7597CF.emf with 710 bytes triggered bug 3ce.9b5 in GpStringFormat::SetData within gdiplus.dll.
+2025-05-10 17:37:12 - INFO - File FE829998ED959773A1CDAA6E1F1A245002A2B15C1D710E1AD3F14160EB27D1A3.emf with 399 bytes triggered bug efe.7fb in EmfEnumState::ExtCreateFontIndirect within gdiplus.dll.
+2025-05-10 17:37:12 - INFO - File F85B6D771F6C16BD2D72CBEC7857EE47A7E84FE064D896099264354146E51C26.emf with 608 bytes triggered bug eb3.7fb in EmfEnumState::Rectangle within gdiplus.dll.
+2025-05-10 17:37:12 - INFO - Found 7 unique bugs across 85 files in total.
+2025-05-10 17:37:13 - INFO - Copied smallest file 3DDA7A452F0E1DCE3CBE6CEB393793EA092E8F35FFAE2BAA5E3EB182C580A379.emf with 609 bytes triggering bug db3.f44 in Div64_Asm within gdiplus.dll.
+2025-05-10 17:37:13 - INFO - Copied smallest file 3359A77937677F9574F27A48FB053C64FFB22535B7E7F212931A792E2AC92768.emf with 458 bytes triggering bug d05.7fb in EmfEnumState::CreatePen within gdiplus.dll.
+2025-05-10 17:37:13 - INFO - Copied smallest file 6005AE6A6C807410FCD00AFFD8002DE22C20B51374EBD06247CFFB7CF7C9DD38.emf with 609 bytes triggering bug 3ce.9b5 in GpStringFormat::SetData within gdiplus.dll.
+2025-05-10 17:37:13 - INFO - Copied smallest file 1D46F5FCCBD871B54E558FDD9B0E74F8F7940B7280F42FD4BFAB7682975432B6.emf with 148 bytes triggering bug efe.7fb in EmfEnumState::ExtCreateFontIndirect within gdiplus.dll.
+2025-05-10 17:37:13 - INFO - Copied smallest file 6E81D1FA89DD6D3B0C0F4DD06BE5EDCE25AA7A72A7AC3086722CBD35AFF2593C.emf with 144 bytes triggering bug eb3.7fb in EmfEnumState::Rectangle within gdiplus.dll.
+2025-05-10 17:37:13 - INFO - Copied smallest file 8465C33BFA0075D033711C1830DFC7E3FA10940513152574EE9725C0C5221CDD.emf with 144 bytes triggering bug 0e5.7fb in EmfEnumState::ExtCreatePen within gdiplus.dll.
+2025-05-10 17:37:13 - INFO - Copied smallest file A390F3B1FEDF1F0BB51706A2A9DD9F5060D7BECFA9D482C7162541354313E863.emf with 400 bytes triggering bug 520.506 in NamedEscape within gdi32full.dll.

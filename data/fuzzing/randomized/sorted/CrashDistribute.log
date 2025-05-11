@@ -1,0 +1,8 @@
+2025-05-11 00:00:16 - INFO - Summary of bugs identified in the crash samples:
+2025-05-11 00:00:16 - INFO - Count: 35     ID: 3ce.9b5      Function: GpStringFormat::SetData                  Library: gdiplus.dll         
+2025-05-11 00:00:16 - INFO - Count: 28     ID: db3.f44      Function: Div64_Asm                                Library: gdiplus.dll         
+2025-05-11 00:00:16 - INFO - Count: 11     ID: eb3.7fb      Function: EmfEnumState::Rectangle                  Library: gdiplus.dll         
+2025-05-11 00:00:16 - INFO - Count: 11     ID: 0e5.7fb      Function: EmfEnumState::ExtCreatePen               Library: gdiplus.dll         
+2025-05-11 00:00:16 - INFO - Count: 3      ID: efe.7fb      Function: EmfEnumState::ExtCreateFontIndirect      Library: gdiplus.dll         
+2025-05-11 00:00:16 - INFO - Count: 1      ID: 999.7fb      Function: EmfEnumState::SetROP2                    Library: gdiplus.dll         
+2025-05-11 00:00:16 - INFO - Count: 1      ID: 520.506      Function: NamedEscape                              Library: gdi32full.dll       

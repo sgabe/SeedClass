@@ -1,0 +1,12 @@
+2025-05-11 00:02:33 - INFO - Summary of bugs identified in the crash samples:
+2025-05-11 00:02:33 - INFO - Count: 2603   ID: f33.8ed      Function: DpRegion::Set                            Library: gdiplus.dll         
+2025-05-11 00:02:33 - INFO - Count: 1261   ID: 8ed.260      Function: DpRegion::And                            Library: gdiplus.dll         
+2025-05-11 00:02:33 - INFO - Count: 158    ID: f33.cf7      Function: DpRegion::Set                            Library: gdiplus.dll         
+2025-05-11 00:02:33 - INFO - Count: 76     ID: d05.7fb      Function: EmfEnumState::CreatePen                  Library: gdiplus.dll         
+2025-05-11 00:02:33 - INFO - Count: 34     ID: eb3.7fb      Function: EmfEnumState::Rectangle                  Library: gdiplus.dll         
+2025-05-11 00:02:33 - INFO - Count: 17     ID: 3ce.9b5      Function: GpStringFormat::SetData                  Library: gdiplus.dll         
+2025-05-11 00:02:33 - INFO - Count: 16     ID: 0e5.7fb      Function: EmfEnumState::ExtCreatePen               Library: gdiplus.dll         
+2025-05-11 00:02:33 - INFO - Count: 11     ID: efe.7fb      Function: EmfEnumState::ExtCreateFontIndirect      Library: gdiplus.dll         
+2025-05-11 00:02:33 - INFO - Count: 3      ID: 8ed.13f      Function: DpRegion::And                            Library: gdiplus.dll         
+2025-05-11 00:02:33 - INFO - Count: 1      ID: db3.f44      Function: Div64_Asm                                Library: gdiplus.dll         
+2025-05-11 00:02:33 - INFO - Count: 1      ID: be9.1bc      Function: GpPen::GetMaximumWidth                   Library: gdiplus.dll         
