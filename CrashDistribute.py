@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.5.0'
+__version__   = '0.5.1'
 __date__      = '2025/04/25'
 __copyright__ = 'Copyright (c) 2025 Gabor Seljan'
 __license__   = 'MIT'
@@ -43,7 +43,7 @@ print('''
 '''.format(__version__))
 
 
-def process_log(path, input_dir, output_dir=None, distribution_size=100):
+def process_log(path, input_dir=None, output_dir=None, distribution_size=100):
     samples = defaultdict(list)  # Maps Bug ID to list of files
     bugs = {}  # Maps Bug ID to (Function name, Library name)
     optimized_counts = defaultdict(int)
@@ -64,7 +64,11 @@ def process_log(path, input_dir, output_dir=None, distribution_size=100):
         logging.error(f'Log file {path} not found!')
         return
 
-    if output_dir:
+    if input_dir and output_dir:
+        if not os.path.isdir(input_dir):
+            logging.error(f'Input folder {input_dir} does not exist or is not a directory!')
+            sys.exit(1)
+
         os.makedirs(output_dir, exist_ok=True)
 
         for id, files in samples.items():
@@ -113,7 +117,7 @@ def main():
 
     parser.add_argument('-l', '--log', required=True,
                         help='path to the SeedSort log file')
-    parser.add_argument('-i', '--input', required=True,
+    parser.add_argument('-i', '--input',
                         help='input folder where the crash samples are located')
     parser.add_argument('-o', '--output',
                         help='output folder to save crash samples for optimized bug distribution')
@@ -123,10 +127,6 @@ def main():
                         help='enable verbose logging')
 
     args = parser.parse_args()
-
-    if not os.path.isdir(args.input):
-        logging.error(f'Input folder {args.input} does not exist or is not a directory!')
-        sys.exit(1)
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
