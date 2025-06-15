@@ -1,11 +1,11 @@
 SeedClass
 ===============
 
-**SeedClass** is an experimental implementation of a seed selection strategy that uses machine learning to enhance coverage-guided fuzz testing. It employs a binary classifier trained on input samples collected from past fuzzing campaigns to distinguish between *valid* inputs and malformed samples that trigger a program *crash*. The predictions of the trained model allows prioritizing inputs that exhibit characteristics similar to samples associated with known vulnerabilities, effectively guiding the fuzzer toward security-sensitive code paths.
+**SeedClass** is an experimental implementation of a seed selection strategy that uses machine learning to enhance coverage-guided fuzz testing. It employs a binary classifier trained on input samples collected from past fuzzing campaigns to distinguish between *valid* inputs and malformed samples that trigger a *crash* in the target program. The predictions of the trained model allows prioritizing inputs that exhibit characteristics similar to samples associated with known vulnerabilities, effectively guiding the fuzzer toward security-sensitive code paths.
 
 ## Training dataset
 
-This repository contains a dataset used to evaluate the proposed seed selection strategy under realistic testing conditions. This case study focused on fuzzing the Windows graphics component using EMF files to assess the effectiveness of the strategy in identifying bugs.
+This repository contains a dataset used to evaluate the proposed ML-based seed selection strategy under realistic testing conditions. This case study focused on fuzzing [Windows GDI](https://learn.microsoft.com/en-us/windows/win32/gdi/windows-gdi) using [EMF](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/91c257d7-c39d-4a36-9b1f-63e3f73d30ca) files to assess the effectiveness of the method in identifying bugs.
 
 <p align="center">
     <img src="figures/learning/imbalanced/countplot.png" alt="Distribution of labels (imbalanced)" width="49%"/>
