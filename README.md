@@ -7,6 +7,28 @@ SeedClass
 
 This repository contains a dataset used to evaluate the proposed seed selection strategy under realistic testing conditions. This case study focused on fuzzing the Windows graphics component using EMF files to assess the effectiveness of the strategy in identifying bugs.
 
+<img src="figures/learning/imbalanced/countplot.png" alt="Distribution of labels (imbalanced)" width="300" height="249"/>
+<img src="figures/learning/balanced/countplot.png" alt="Distribution of labels (balanced)" width="300" height="249"/>
+
+
+<img src="figures/learning/imbalanced/pca-2.png" alt="2-component PCA (imbalanced)" width="300" height="249"/>
+<img src="figures/learning/balanced/pca-2.png" alt="2-component PCA (balanced)" width="300" height="249"/>
+
+
+<img src="figures/learning/imbalanced/tsne.png" alt="t-SNE (imbalanced)"  width="300" height="249"/>
+<img src="figures/learning/balanced/tsne.png" alt="t-SNE (balanced)" width="300" height="249"/>
+
+## Learning process
+
+<img src="figures/learning/imbalanced/metrics-cross-val-essential.png" alt="Essential metrics (imbalanced)" width="300" height="227">
+<img src="figures/learning/balanced/metrics-cross-val-essential.png" alt="Essential metrics (balanced)" width="300" height="227">
+
+<img src="figures/learning/imbalanced/metrics-prc.png" alt="PRC (imbalanced)" width="300" height="249">
+<img src="figures/learning/balanced/metrics-prc.png" alt="PRC (balanced)" width="300" height="249">
+
+<img src="figures/learning/imbalanced/confusion_matrix.png" alt="Confusion matrix (imbalanced)" width="300" height="269">
+<img src="figures/learning/balanced/confusion_matrix.png" alt="Confusion matrix (balanced)" width="300" height="269">
+
 ## Evaluation results
 
 | Strategy             | Execs    | Speed    | Paths   | Pending  | Coverage   | Stability  | TTC       | Crashes |
