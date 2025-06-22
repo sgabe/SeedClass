@@ -1,11 +1,11 @@
 SeedClass
 ===============
 
-**SeedClass** is an experimental implementation of a seed selection strategy that uses machine learning to enhance coverage-guided fuzz testing. It employs a binary classifier trained on input samples collected from past fuzzing campaigns to distinguish between *valid* inputs and malformed samples that trigger a *crash* in the target program. The predictions of the trained model allows prioritizing inputs that exhibit characteristics similar to samples associated with known vulnerabilities, effectively guiding the fuzzer toward security-sensitive code paths.
+**SeedClass** is an experimental implementation of a seed selection strategy that uses machine learning to enhance coverage-guided mutational fuzz testing. It employs a neural network as a binary classifier, trained on input samples collected from past fuzzing campaigns to distinguish between *valid* inputs and malformed samples that trigger a *crash* in the target program. The predictions of the trained model enable the prioritization of inputs that exhibit characteristics similar to samples associated with known vulnerabilities, effectively guiding the fuzzer toward the security-sensitive parts of the program.
 
 ## Training dataset
 
-This repository contains a dataset used to evaluate the proposed ML-based seed selection strategy under realistic testing conditions. This case study focused on fuzzing [Windows GDI](https://learn.microsoft.com/en-us/windows/win32/gdi/windows-gdi) using [EMF](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/91c257d7-c39d-4a36-9b1f-63e3f73d30ca) files to assess the effectiveness of the method in identifying bugs.
+This repository provides a labeled dataset created to evaluate the proposed ML-based seed selection strategy under realistic testing conditions. This case study focused on fuzzing [Windows GDI](https://learn.microsoft.com/en-us/windows/win32/gdi/windows-gdi) using [EMF](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/91c257d7-c39d-4a36-9b1f-63e3f73d30ca) files on a legacy version of Windows to assess the effectiveness of the method in directing the fuzzer towards known bugs.
 
 <p align="center">
     <img src="figures/learning/imbalanced/countplot.png" alt="Distribution of labels (imbalanced)" width="49%"/>
