@@ -4,12 +4,14 @@
 //      File: EMF.bt
 //   Authors: Gabor Seljan
 //    E-mail: gabor@seljan.hu
-//   Version: 0.2
-//   Purpose: Enhanced Metafile Format (EMF) template. 
+//   Version: 0.4
+//   Purpose: Enhanced Metafile Format (EMF) template.
 //  Category: Image
 // File Mask: *.emf
 //  ID Bytes: 01 00 00 00
 //   History:
+//   0.4   2025-06-29 G Seljan: Updated version.
+//   0.3   2025-02-08 G Seljan: Updated version.
 //   0.2   2024-01-26 G Seljan: Updated version.
 //   0.1   2023-11-20 G Seljan: Initial version.
 //
@@ -19,8 +21,250 @@
 
 // Define structures used in EMF files
 
-// https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/1eec80ba-799b-4784-a9ac-91597d590ae1
-typedef enum <DWORD> {
+/** SIZE structure (windef.h)
+ * https://docs.microsoft.com/en-us/previous-versions/bb401793(v=msdn.10)
+ */
+typedef struct tagSIZEL {
+  LONG cx;
+  LONG cy;
+} SIZEL;
+
+/** POINT structure (windef.h)
+ * https://docs.microsoft.com/en-us/windows/win32/api/windef/ns-windef-point
+ */
+typedef struct tagPOINT {
+  LONG x;
+  LONG y;
+} POINT;
+
+// https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-xform
+typedef struct tagXFORM {
+  FLOAT eM11;
+  FLOAT eM12;
+  FLOAT eM21;
+  FLOAT eM22;
+  FLOAT eDx;
+  FLOAT eDy;
+} XFORM;
+
+// https://docs.microsoft.com/en-us/previous-versions/ms931125(v=msdn.10)
+typedef struct tagRECTL {
+  LONG left;
+  LONG top;
+  LONG right;
+  LONG bottom;
+} RECTL;
+
+// https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-ciexyz
+typedef struct tagCIEXYZ {
+  LONG ciexyzX;
+  LONG ciexyzY;
+  LONG ciexyzZ;
+} CIEXYZ;
+
+// https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-ciexyztriple
+typedef struct tagICEXYZTRIPLE {
+  CIEXYZ ciexyzRed;
+  CIEXYZ ciexyzGreen;
+  CIEXYZ ciexyzBlue;
+} CIEXYZTRIPLE;
+
+//------------------------------------------------
+// 2.1 WMF Enumerations
+//------------------------------------------------
+
+/** 2.1.1.3 BitCount Enumeration
+ * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/792153f4-1e99-4ec8-93cf-d171a5f33903
+ */
+typedef enum {
+  BI_BITCOUNT_0 = 0x0000,
+  BI_BITCOUNT_1 = 0x0001, // Bitmap is monochrome.
+  BI_BITCOUNT_2 = 0x0004, // Bitmap has a maximum of 16 colors.
+  BI_BITCOUNT_3 = 0x0008, // Bitmap has a maximum of 256 colors.
+  BI_BITCOUNT_4 = 0x0010, // Bitmap has a maximum of 2^16 colors.
+  BI_BITCOUNT_5 = 0x0018, // Bitmap has a maximum of 2^24 colors.
+  BI_BITCOUNT_6 = 0x0020  // Bitmap has a maximum of 2^32 colors.
+} BitCount;
+
+/** 2.1.1.4 BrushStyle Enumeration
+ * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/38e6de43-2cfe-428e-874e-391dbf74570c
+ */
+typedef enum {
+  BS_SOLID   = 0,
+  BS_NULL    = 1,
+  BS_HATCHED = 2,
+} BrushStyle;
+
+/** 2.1.1.7 Compression Enumeration
+ * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/4e588f70-bd92-4a6f-b77f-35d0feaf7a57
+ */
+typedef enum {
+  BI_RGB       = 0x0,
+  BI_RLE8      = 0x1,
+  BI_RLE4      = 0x2,
+  BI_BITFIELDS = 0x3,
+  BI_JPEG      = 0x4,
+  BI_PNG       = 0x5,
+  BI_CMYK      = 0xB,
+  BI_CMYKRLE8  = 0xC,
+  BI_CMYKRLE4  = 0xD
+} Compression;
+
+/** 2.1.1.11 GamutMappingIntent
+ * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/9fec0834-607d-427d-abd5-ab240fb0db38
+ */
+typedef enum {
+  LCS_GM_ABS_COLORIMETRIC = 0x00000008,
+  LCS_GM_BUSINESS         = 0x00000001,
+  LCS_GM_GRAPHICS         = 0x00000002,
+  LCS_GM_IMAGES           = 0x00000004
+} GamutMappingIntent;
+
+/** 2.1.1.14 LogicalColorSpace
+ * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/eb4bbd50-b3ce-4917-895c-be31f214797f
+ */
+typedef enum {
+  LCS_CALIBRATED_RGB      = 0x00000000,
+  LCS_sRGB                = 0x73524742,
+  LCS_WINDOWS_COLOR_SPACE = 0x57696E20
+} LogicalColorSpace;
+
+/** 2.1.1.17 MetafileEscapes Enumeration
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/55961a7b-f6f6-4f0b-a76b-b4cf652bc86b
+ */
+typedef enum {
+  NEWFRAME                      = 0x00000001,
+  ABORTDOC                      = 0x00000002,
+  NEXTBAND                      = 0x00000003,
+  SETCOLORTABLE                 = 0x00000004,
+  GETCOLORTABLE                 = 0x00000005,
+  FLUSHOUT                      = 0x00000006,
+  DRAFTMODE                     = 0x00000007,
+  QUERYESCSUPPORT               = 0x00000008,
+  SETABORTPROC                  = 0x00000009,
+  STARTDOC                      = 0x0000000A,
+  ENDDOC                        = 0x0000000B,
+  GETPHYSPAGESIZE               = 0x0000000C,
+  GETPRINTINGOFFSET             = 0x0000000D,
+  GETSCALINGFACTOR              = 0x0000000E,
+  META_ESCAPE_ENHANCED_METAFILE = 0x0000000F,
+  SETPENWIDTH                   = 0x00000010,
+  SETCOPYCOUNT                  = 0x00000011,
+  SETPAPERSOURCE                = 0x00000012,
+  PASSTHROUGH                   = 0x00000013,
+  GETTECHNOLOGY                 = 0x00000014,
+  SETLINECAP                    = 0x00000015,
+  SETLINEJOIN                   = 0x00000016,
+  SETMITERLIMIT                 = 0x00000017,
+  BANDINFO                      = 0x00000018,
+  DRAWPATTERNRECT               = 0x00000019,
+  GETVECTORPENSIZE              = 0x0000001A,
+  GETVECTORBRUSHSIZE            = 0x0000001B,
+  ENABLEDUPLEX                  = 0x0000001C,
+  GETSETPAPERBINS               = 0x0000001D,
+  GETSETPRINTORIENT             = 0x0000001E,
+  ENUMPAPERBINS                 = 0x0000001F,
+  SETDIBSCALING                 = 0x00000020,
+  EPSPRINTING                   = 0x00000021,
+  ENUMPAPERMETRICS              = 0x00000022,
+  GETSETPAPERMETRICS            = 0x00000023,
+  POSTSCRIPT_DATA               = 0x00000025,
+  POSTSCRIPT_IGNORE             = 0x00000026,
+  GETDEVICEUNITS                = 0x0000002A,
+  GETEXTENDEDTEXTMETRICS        = 0x00000100,
+  GETPAIRKERNTABLE              = 0x00000102,
+  EXTTEXTOUT                    = 0x00000200,
+  GETFACENAME                   = 0x00000201,
+  DOWNLOADFACE                  = 0x00000202,
+  METAFILE_DRIVER               = 0x00000801,
+  QUERYDIBSUPPORT               = 0x00000C01,
+  BEGIN_PATH                    = 0x00001000,
+  CLIP_TO_PATH                  = 0x00001001,
+  END_PATH                      = 0x00001002,
+  OPENCHANNEL                   = 0x0000100E,
+  DOWNLOADHEADER                = 0x0000100F,
+  CLOSECHANNEL                  = 0x00001010,
+  POSTSCRIPT_PASSTHROUGH        = 0x00001013,
+  ENCAPSULATED_POSTSCRIPT       = 0x00001014,
+  POSTSCRIPT_IDENTIFY           = 0x00001015,
+  POSTSCRIPT_INJECTION          = 0x00001016,
+  CHECKJPEGFORMAT               = 0x00001017,
+  CHECKPNGFORMAT                = 0x00001018,
+  GET_PS_FEATURESETTING         = 0x00001019,
+  MXDC_ESCAPE                   = 0x0000101A,
+  SPCLPASSTHROUGH2              = 0x000011D8
+} MetafileEscapes;
+
+//------------------------------------------------
+// 2.2.2 WMF Structure Objects
+//------------------------------------------------
+
+/** 2.2.2.8 ColorRef Object
+ * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/0fdf54fc-6357-4cdd-b27f-795dee14cf86
+ */
+typedef struct {
+  UBYTE Red;
+  UBYTE Green;
+  UBYTE Blue;
+  UBYTE Reserved;
+} COLORREF;
+
+/** 2.2.2.11 LogColorSpace Object
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/0a8def2e-0d65-4174-9f67-17c8f3341514
+ */
+typedef struct tagLOGCOLORSPACEA {
+  DWORD lcsSignature;
+  DWORD lcsVersion;
+  DWORD lcsSize;
+  LogicalColorSpace lcsCSType;
+  GamutMappingIntent lcsIntent;
+  CIEXYZTRIPLE lcsEndpoints;
+  DWORD lcsGammaRed;
+  DWORD lcsGammaGreen;
+  DWORD lcsGammaBlue;
+  CHAR lcsFilename[260];
+} LOGCOLORSPACEA;
+
+/** 2.2.2.12 LogColorSpaceW Object
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/87794877-4d83-40fa-98cb-9ffa20eed863
+ */
+typedef struct tagLOGCOLORSPACEW {
+  DWORD lcsSignature;
+  DWORD lcsVersion;
+  DWORD lcsSize;
+  LogicalColorSpace lcsCSType;
+  GamutMappingIntent lcsIntent;
+  CIEXYZTRIPLE lcsEndpoints;
+  DWORD lcsGammaRed;
+  DWORD lcsGammaGreen;
+  DWORD lcsGammaBlue;
+  CHAR lcsFilename[520];
+} LOGCOLORSPACEW;
+
+/** 2.2.2.15 PointL Object
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/4eeaf09e-e41a-491c-93a1-7aec0afd4f96
+ */
+ typedef struct {
+  DWORD x;
+  DWORD y;
+} POINTL;
+
+/** 2.2.2.16 PointS Object
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/3066aeb3-12f5-4ed9-bf25-18c73a6e7175
+ */
+ typedef struct {
+  WORD x;
+  WORD y;
+} POINTS;
+
+//------------------------------------------------
+// 2.1 EMF Enumerations
+//------------------------------------------------
+
+/** 2.1.1 RecordType Enumeration
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/1eec80ba-799b-4784-a9ac-91597d590ae1
+ */
+typedef enum {
   EMR_HEADER                  = 0x1,
   EMR_POLYBEZIER              = 0x2,
   EMR_POLYGON                 = 0x3,
@@ -145,109 +389,86 @@ typedef enum <DWORD> {
   EMR_CREATECOLORSPACEW       = 0x7A
 } EmfRecordType;
 
-typedef enum <DWORD> {
-  NEWFRAME                      = 0x00000001,
-  ABORTDOC                      = 0x00000002,
-  NEXTBAND                      = 0x00000003,
-  SETCOLORTABLE                 = 0x00000004,
-  GETCOLORTABLE                 = 0x00000005,
-  FLUSHOUT                      = 0x00000006,
-  DRAFTMODE                     = 0x00000007,
-  QUERYESCSUPPORT               = 0x00000008,
-  SETABORTPROC                  = 0x00000009,
-  STARTDOC                      = 0x0000000A,
-  ENDDOC                        = 0x0000000B,
-  GETPHYSPAGESIZE               = 0x0000000C,
-  GETPRINTINGOFFSET             = 0x0000000D,
-  GETSCALINGFACTOR              = 0x0000000E,
-  META_ESCAPE_ENHANCED_METAFILE = 0x0000000F,
-  SETPENWIDTH                   = 0x00000010,
-  SETCOPYCOUNT                  = 0x00000011,
-  SETPAPERSOURCE                = 0x00000012,
-  PASSTHROUGH                   = 0x00000013,
-  GETTECHNOLOGY                 = 0x00000014,
-  SETLINECAP                    = 0x00000015,
-  SETLINEJOIN                   = 0x00000016,
-  SETMITERLIMIT                 = 0x00000017,
-  BANDINFO                      = 0x00000018,
-  DRAWPATTERNRECT               = 0x00000019,
-  GETVECTORPENSIZE              = 0x0000001A,
-  GETVECTORBRUSHSIZE            = 0x0000001B,
-  ENABLEDUPLEX                  = 0x0000001C,
-  GETSETPAPERBINS               = 0x0000001D,
-  GETSETPRINTORIENT             = 0x0000001E,
-  ENUMPAPERBINS                 = 0x0000001F,
-  SETDIBSCALING                 = 0x00000020,
-  EPSPRINTING                   = 0x00000021,
-  ENUMPAPERMETRICS              = 0x00000022,
-  GETSETPAPERMETRICS            = 0x00000023,
-  POSTSCRIPT_DATA               = 0x00000025,
-  POSTSCRIPT_IGNORE             = 0x00000026,
-  GETDEVICEUNITS                = 0x0000002A,
-  GETEXTENDEDTEXTMETRICS        = 0x00000100,
-  GETPAIRKERNTABLE              = 0x00000102,
-  EXTTEXTOUT                    = 0x00000200,
-  GETFACENAME                   = 0x00000201,
-  DOWNLOADFACE                  = 0x00000202,
-  METAFILE_DRIVER               = 0x00000801,
-  QUERYDIBSUPPORT               = 0x00000C01,
-  BEGIN_PATH                    = 0x00001000,
-  CLIP_TO_PATH                  = 0x00001001,
-  END_PATH                      = 0x00001002,
-  OPENCHANNEL                   = 0x0000100E,
-  DOWNLOADHEADER                = 0x0000100F,
-  CLOSECHANNEL                  = 0x00001010,
-  POSTSCRIPT_PASSTHROUGH        = 0x00001013,
-  ENCAPSULATED_POSTSCRIPT       = 0x00001014,
-  POSTSCRIPT_IDENTIFY           = 0x00001015,
-  POSTSCRIPT_INJECTION          = 0x00001016,
-  CHECKJPEGFORMAT               = 0x00001017,
-  CHECKPNGFORMAT                = 0x00001018,
-  GET_PS_FEATURESETTING         = 0x00001019,
-  MXDC_ESCAPE                   = 0x0000101A,
-  SPCLPASSTHROUGH2              = 0x000011D8
-} MetafileEscapes;
+/** 2.1.4 BackgroundMode Enumeration
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/2f57054c-2b69-4303-a6f8-5aacd401f759
+ */
+typedef enum {
+  TRANSPARENT = 0x0001,
+  OPAQUE      = 0x0002
+} BackgroundMode;
 
-typedef enum <DWORD> {
+/** 2.1.6 ColorMatchToTarget Enumeration
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/b63c02c1-7644-4ef3-a496-3127621cb7b5
+ */
+typedef enum {
+  COLORMATCHTOTARGET_NOTEMBEDDED = 0x0,
+  COLORMATCHTOTARGET_EMBEDDED    = 0x1
+} ColorMatchToTarget;
+
+/** 2.1.7 ColorSpace Enumeration
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/75da12f8-f437-48e8-8677-4b46e0045969
+ */
+typedef enum {
+  CS_ENABLE           = 0x00000001,
+  CS_DISABLE          = 0x00000002,
+  CS_DELETE_TRANSFORM = 0x00000003
+} ColorSpace;
+
+/** 2.1.9 DIBColors Enumeration
+ * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/a5e722e3-891a-4a67-be1a-ed5a48a7fda1
+ */
+typedef enum {
+  DIB_RGB_COLORS  = 0x00,
+  DIB_PAL_COLORS  = 0x01,
+  DIB_PAL_INDICES = 0x02
+} DIBColors;
+
+/** 2.1.15 GradientFill Enumeration
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/699e75a0-28af-4d6f-b7aa-dc76e1b0001a
+ */
+typedef enum {
    GRADIENT_FILL_RECT_H   = 0x00000000,
    GRADIENT_FILL_RECT_V   = 0x00000001,
    GRADIENT_FILL_TRIANGLE = 0x00000002
- } GradientFill;
+} GradientFill;
 
-/** 1.11 GamutMappingIntent
- * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/9fec0834-607d-427d-abd5-ab240fb0db38
+/** 2.1.21 MapMode Enumeration
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/109d7955-767e-4955-a0e2-f8b5e14f757a
  */
-typedef enum <DWORD> {
-  LCS_GM_ABS_COLORIMETRIC = 8,
-  LCS_GM_BUSINESS         = 1,
-  LCS_GM_GRAPHICS         = 2,
-  LCS_GM_IMAGES           = 4
-} GamutMappingIntent;
+typedef enum {
+   MM_TEXT        = 0x01,
+   MM_LOMETRIC    = 0x02,
+   MM_HIMETRIC    = 0x03,
+   MM_LOENGLISH   = 0x04,
+   MM_HIENGLISH   = 0x05,
+   MM_TWIPS       = 0x06,
+   MM_ISOTROPIC   = 0x07,
+   MM_ANISOTROPIC = 0x08
+} MapMode;
 
-/** 1.14 LogicalColorSpace
- * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/eb4bbd50-b3ce-4917-895c-be31f214797f
+/** 2.1.27 PolygonFillMode Enumeration
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/879a1869-08ad-4977-83e8-09be265e2c7c
  */
-typedef enum <DWORD> {
-  LCS_CALIBRATED_RGB      = 0x00000000,
-  LCS_sRGB                = 0x73524742,
-  LCS_WINDOWS_COLOR_SPACE = 0x57696E20
-} LogicalColorSpace;
+typedef enum {
+  ALTERNATE = 0x01,
+  WINDING   = 0x02
+} PolygonFillMode;
 
-/** 1.29 RegionMode Enumeration
+/** 2.1.29 RegionMode Enumeration
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/b7f99f50-dd2f-4528-9624-f74140368019
  */
-typedef enum <DWORD> {
-  RGN_AND  = 1,
-  RGN_OR   = 2,
-  RGN_XOR  = 3,
-  RGN_DIFF = 4,
-  RGN_COPY = 5
+typedef enum {
+  RGN_AND  = 0x01,
+  RGN_OR   = 0x02,
+  RGN_XOR  = 0x03,
+  RGN_DIFF = 0x04,
+  RGN_COPY = 0x05
  } RegionMode;
 
-/** 1.31 StockObject
+/** 2.1.31 StockObject Enumeration
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/d6dffd25-8615-42f8-aed1-309f1fe54ab2
  */
-typedef enum <DWORD> {
+typedef enum {
   WHITE_BRUSH         = 0x80000000,
   LTGRAY_BRUSH        = 0x80000001,
   GRAY_BRUSH          = 0x80000002,
@@ -269,108 +490,19 @@ typedef enum <DWORD> {
   DC_PEN              = 0x80000013
 } StockObject;
 
-// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/4e588f70-bd92-4a6f-b77f-35d0feaf7a57
-typedef enum <DWORD> {
-  BI_RGB       = 0x00000000,
-  BI_RLE8      = 0x00000001,
-  BI_RLE4      = 0x00000002,
-  BI_BITFIELDS = 0x00000003,
-  BI_JPEG      = 0x00000004,
-  BI_PNG       = 0x00000005,
-  BI_CMYK      = 0x0000000B,
-  BI_CMYKRLE8  = 0x0000000C,
-  BI_CMYKRLE4  = 0x0000000D
-} Compression;
-
-
-// https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/b63c02c1-7644-4ef3-a496-3127621cb7b5
-typedef enum <DWORD> {
-  COLORMATCHTOTARGET_NOTEMBEDDED = 0x00000000,
-  COLORMATCHTOTARGET_EMBEDDED    = 0x00000001
-} ColorMatchToTarget;
-
-// https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/75da12f8-f437-48e8-8677-4b46e0045969
-typedef enum <DWORD> {
-  CS_ENABLE           = 0x00000001,
-  CS_DISABLE          = 0x00000002,
-  CS_DELETE_TRANSFORM = 0x00000003
-} ColorSpace;
-
-// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/792153f4-1e99-4ec8-93cf-d171a5f33903
-typedef enum <WORD> {
-  BI_BITCOUNT_0 = 0,
-  BI_BITCOUNT_1 = 1, // Bitmap is monochrome.
-  BI_BITCOUNT_2 = 4, // Bitmap has a maximum of 16 colors.
-  BI_BITCOUNT_3 = 8, // Bitmap has a maximum of 256 colors.
-  BI_BITCOUNT_4 = 0x10, // Bitmap has a maximum of 2^16 colors.
-  BI_BITCOUNT_5 = 0x18, // Bitmap has a maximum of 2^24 colors.
-  BI_BITCOUNT_6 = 0x20  // Bitmap has a maximum of 2^32 colors.
- } BitCount;
-
-// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/38e6de43-2cfe-428e-874e-391dbf74570c
+/** 2.1.32 StretchMode Enumeration
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/e72f20aa-2e2d-453f-9e95-eaef50b76e19
+ */
 typedef enum {
-  BS_SOLID   = 0,
-  BS_NULL    = 1,
-  BS_HATCHED = 2,
- } BrushStyle;
+  STRETCH_ANDSCANS    = 0x01,
+  STRETCH_ORSCANS     = 0x02,
+  STRETCH_DELETESCANS = 0x03,
+  STRETCH_HALFTONE    = 0x04
+} StretchMode;
 
- // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/a5e722e3-891a-4a67-be1a-ed5a48a7fda1
-typedef enum {
-  DIB_RGB_COLORS  = 0,
-  DIB_PAL_COLORS  = 1,
-  DIB_PAL_INDICES = 2
-} DIBColors;
-
-// https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-xform
-typedef struct tagXFORM {
-  FLOAT eM11;
-  FLOAT eM12;
-  FLOAT eM21;
-  FLOAT eM22;
-  FLOAT eDx;
-  FLOAT eDy;
-} XFORM;
-
-typedef struct {
-  LONG  cx;
-  LONG  cy;
-} SIZEL;
-
-typedef struct _RECTL { 
-  LONG left; 
-  LONG top; 
-  LONG right; 
-  LONG bottom; 
-} RECTL;
-
-// https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-ciexyz
-typedef struct tagCIEXYZ {
-  LONG ciexyzX;
-  LONG ciexyzY;
-  LONG ciexyzZ;
-} CIEXYZ;
-
-// https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-ciexyztriple
-typedef struct tagICEXYZTRIPLE {
-  CIEXYZ ciexyzRed;
-  CIEXYZ ciexyzGreen;
-  CIEXYZ ciexyzBlue;
-} CIEXYZTRIPLE;
-
-// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/0fdf54fc-6357-4cdd-b27f-795dee14cf86
-typedef struct {
-  UBYTE	Red;
-  UBYTE Green;
-  UBYTE Blue;
-  UBYTE Reserved;
-} COLORREF;
-
-// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/6d790f8d-5165-4746-bac3-3443915c2071
-typedef struct {
-  BrushStyle lbStyle;
-  COLORREF lbColor;
-  DWORD lbHatch;
-} LogBrushEx;
+//------------------------------------------------
+// 2.2 EMF Objects
+//------------------------------------------------
 
 // https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-blendfunction
 typedef struct {
@@ -380,130 +512,80 @@ typedef struct {
   BYTE AlphaFormat;
 } BLENDFUNCTION;
 
-// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/33578509-8349-46b6-8f8f-107c3f70bace
-typedef struct _TRIVERTEX {
-  LONG x;
-  LONG y;
-  WORD Red;
-  WORD Green;
-  WORD Blue;
-  WORD Alpha;
-} TRIVERTEX;
-
-// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/93ba94f7-84fc-4dd5-8c94-3d476aa7588b
-typedef struct _GRADIENT_RECT {
-  ULONG UpperLeft;
-  ULONG LowerRight;
-} GRADIENT_RECT;
-
-// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/00cc8ab4-ea2e-4bb1-9569-1201af47a0c8
-typedef struct {
-  DWORD cbPixelFormat;
-  DWORD offPixelFormat;
-  DWORD bOpenGL;
-} HeaderExtension1;
-
-// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/9e96e5cf-e949-49ae-baa8-3fffd948e588
-typedef struct {
-  DWORD MicrometersX;
-  DWORD MicrometersY;
-} HeaderExtension2;
-
-typedef struct {
-  EmfRecordType iType;     // Record type EMR_HEADER.
-  DWORD   nSize;           // Record size in bytes. This may be greater
-                           // than the sizeof(ENHMETAHEADER).
-  RECTL   rclBounds;       // Inclusive-inclusive bounds in device units.
-  RECTL   rclFrame;        // Inclusive-inclusive Picture Frame of 
-                           // metafile in .01 mm units. 
-  DWORD   dSignature;      // Signature.  Must be ENHMETA_SIGNATURE.
-  DWORD   nVersion;        // Version number.
-  DWORD   nBytes;          // Size of the metafile in bytes.
-  DWORD   nRecords;        // Number of records in the metafile.
-  WORD    nHandles;        // Number of handles in the handle table.
-                           // Handle index zero is reserved.
-  WORD    sReserved;       // Reserved.  Must be zero.
-  DWORD   nDescription;    // Number of chars in the unicode description string.
-                           // This is 0 if there is no description string.
-  DWORD   offDescription;  // Offset to the metafile description record.
-                           // This is 0 if there is no description string.
-  DWORD   nPalEntries;     // Number of entries in the metafile palette.
-  SIZEL   szlDevice;       // Size of the reference device in pixels. 
-  SIZEL   szlMillimeters;  // Size of the reference device in millimeters.
-  HeaderExtension1 EmfHeaderExtension1;
-  HeaderExtension2 EmfHeaderExtension2;
-} EMRHEADER;
-
-typedef struct {
-  WORD desc[EmfHeader.nDescription];
-} EMRDESCRIPTION;
-
-/** 2.11 LogColorSpace
- * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/0a8def2e-0d65-4174-9f67-17c8f3341514
+/** 2.2.5 EmrText Object
+ * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/dd585d0a-5d7c-4034-963a-1141af836972
  */
-typedef struct tagLOGCOLORSPACEA {
-  DWORD lcsSignature;
-  DWORD lcsVersion;
-  DWORD lcsSize;
-  LogicalColorSpace lcsCSType;
-  GamutMappingIntent lcsIntent;
-  CIEXYZTRIPLE lcsEndpoints;
-  DWORD lcsGammaRed;
-  DWORD lcsGammaGreen;
-  DWORD lcsGammaBlue;
-  CHAR lcsFilename[260];
-} LOGCOLORSPACEA;
-
-/** 2.12 LogColorSpaceW
- * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/87794877-4d83-40fa-98cb-9ffa20eed863
- */
-typedef struct tagLOGCOLORSPACEW {
-  DWORD lcsSignature;
-  DWORD lcsVersion;
-  DWORD lcsSize;
-  LogicalColorSpace lcsCSType;
-  GamutMappingIntent lcsIntent;
-  CIEXYZTRIPLE lcsEndpoints;
-  DWORD lcsGammaRed;
-  DWORD lcsGammaGreen;
-  DWORD lcsGammaBlue;
-  CHAR lcsFilename[520];
-} LOGCOLORSPACEW;
-
-// Harli : 3/8/2017 1:16:26
-// https://msdn.microsoft.com/en-us/library/windows/desktop/dd162938(v=vs.85).aspx
-typedef struct tagRGBQUAD {
-  BYTE rgbBlue;
-  BYTE rgbGreen;
-  BYTE rgbRed;
-  BYTE rgbReserved;
-} RGBQUAD;
-
-// https://docs.microsoft.com/en-us/windows/win32/api/windef/ns-windef-point
-typedef struct tagPOINT {
-  LONG x;
-  LONG y;
-} POINT;
-
-// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/dd585d0a-5d7c-4034-963a-1141af836972
-typedef struct tagEMRTEXT {
+typedef struct {
+  local uint emrOffset = FTell();
+  FSeek(emrOffset);
   POINT ptlReference;
   DWORD nChars;
   DWORD offString;
   DWORD fOptions;
   RECTL rcl;
   DWORD offDx;
-  BYTE bStringBuffer[nChars];
-} EMRTEXT;
+  if (nChars) {
+    FSeek(emrOffset+offString);
+    BYTE bStringBuffer[nChars];
+    FSeek(emrOffset+offDx);
+    DWORD OutputDx[nChars];
+  }
+} EMRTEXTA;
 
-// https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-logpen
-typedef struct tagLOGPEN {
-  UINT lopnStyle;
-  POINT lopnWidth;
-  COLORREF lopnColor;
-} LOGPEN;
+/** 2.2.7 GradientRectangle Object
+ * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/93ba94f7-84fc-4dd5-8c94-3d476aa7588b
+ */
+typedef struct _GRADIENT_RECT {
+  ULONG UpperLeft;
+  ULONG LowerRight;
+} GRADIENT_RECT;
 
-/** 2.20 LogPenEx
+/** 2.2.10 HeaderExtension1 Object
+ * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/00cc8ab4-ea2e-4bb1-9569-1201af47a0c8
+ */
+typedef struct {
+  DWORD cbPixelFormat;
+  DWORD offPixelFormat;
+  DWORD bOpenGL;
+} HeaderExtension1;
+
+/** 2.2.11 HeaderExtension2 Object
+ * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/9e96e5cf-e949-49ae-baa8-3fffd948e588
+ */
+typedef struct {
+  DWORD MicrometersX;
+  DWORD MicrometersY;
+} HeaderExtension2;
+
+/** 2.2.12 LogBrushEx Object
+ * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/6d790f8d-5165-4746-bac3-3443915c2071
+ */
+typedef struct {
+  BrushStyle lbStyle;
+  COLORREF lbColor;
+  DWORD lbHatch;
+} LogBrushEx;
+
+/** 2.2.18 LogPaletteEntry Object
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/c1f7b285-be16-4112-a4e6-0b2fd4c1d148
+ */
+typedef struct tagLOGPALETTEENTRY {
+  uchar Reserved;
+  uchar Blue;
+  uchar Green;
+  uchar Red;
+} LOGPALETTEENTRY;
+
+/** 2.2.17 LogPalette Object
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/758f047d-765e-424c-9204-a833b7b4e527
+ */
+typedef struct tagLOGPALETTE {
+  WORD palVersion;
+  WORD palNumEntries;
+  LOGPALETTEENTRY palPalEntry[palNumEntries];
+} LOGPALETTE;
+
+/** 2.2.20 LogPenEx
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/5b67b3ee-ea00-4f80-9b73-2959804381be
  */
 typedef struct tagLOGPENEX {
@@ -516,26 +598,34 @@ typedef struct tagLOGPENEX {
   DWORD StyleEntry[NumStyleEntries];
 } LOGPENEX;
 
-/** 2.18 LogPaletteEntry Object
- * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/c1f7b285-be16-4112-a4e6-0b2fd4c1d148
+/** 2.2.26 TriVertex Object
+ * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/33578509-8349-46b6-8f8f-107c3f70bace
  */
-typedef struct tagLOGPALETTEENTRY {
-  uchar	Reserved;
-  uchar	Blue;
-  uchar	Green;
-  uchar	Red;
-} LOGPALETTEENTRY;
+typedef struct _TRIVERTEX {
+  LONG x;
+  LONG y;
+  WORD Red;
+  WORD Green;
+  WORD Blue;
+  WORD Alpha;
+} TRIVERTEX;
 
-/** 2.17 LogPalette Object
- * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/758f047d-765e-424c-9204-a833b7b4e527
- */
-typedef struct tagLOGPALETTE {
-  WORD palVersion;
-  WORD palNumEntries;
-  LOGPALETTEENTRY palPalEntry[palNumEntries];
-} LOGPALETTE;
+// https://msdn.microsoft.com/en-us/library/windows/desktop/dd162938(v=vs.85).aspx
+typedef struct tagRGBQUAD {
+  BYTE rgbBlue;
+  BYTE rgbGreen;
+  BYTE rgbRed;
+  BYTE rgbReserved;
+} RGBQUAD;
 
-/** 2.25 RegionDataHeader Object
+// https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-logpen
+typedef struct tagLOGPEN {
+  UINT lopnStyle;
+  POINT lopnWidth;
+  COLORREF lopnColor;
+} LOGPEN;
+
+/** 2.2.25 RegionDataHeader Object
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/5ca68a15-1811-45b6-a51b-5e40d1055ccc
  */
 typedef struct tagREGIONDATAHEADER {
@@ -546,12 +636,12 @@ typedef struct tagREGIONDATAHEADER {
   RECTL rgnBounds;
 } REGIONDATAHEADER;
 
-/** 2.24 RegionData Object
+/** 2.2.24 RegionData Object
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/e66601f2-9b5c-4619-8476-ddb7b087551b
  */
 typedef struct tagREGIONDATA {
   REGIONDATAHEADER rgnDataHeader;
-  RECTL data[rgnDataHeader.cntRects];
+  RECTL data[1] <optimize=false>;
 } REGIONDATA;
 
 /** 2.2.27 UniversalFontId Object
@@ -562,8 +652,9 @@ typedef struct {
   DWORD index;
 } UniversalFontId;
 
-// Harli : 3/8/2017 1:16:26
-// https://msdn.microsoft.com/en-us/library/windows/desktop/dd183375(v=vs.85).aspx
+/** BITMAPINFOHEADER structure
+ * https://docs.microsoft.com/en-us/previous-versions//dd183376(v=vs.85)
+ */
 typedef struct tagBITMAPINFOHEADER {
   DWORD biSize;
   LONG  biWidth;
@@ -578,7 +669,9 @@ typedef struct tagBITMAPINFOHEADER {
   DWORD biClrImportant;
 } BITMAPINFOHEADER;
 
-// https://msdn.microsoft.com/en-us/library/windows/desktop/dd183376(v=vs.85).aspx
+/** BITMAPINFO structure (wingdi.h)
+ * https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfo
+ */
 typedef struct tagBITMAPINFO {
   BITMAPINFOHEADER bmiHeader;
 
@@ -602,16 +695,12 @@ typedef struct tagBITMAPINFO {
 
 } BITMAPINFO;
 
-typedef struct {
-  EmfRecordType iType;
-  DWORD	nSize;
-  DWORD nPalEntries;
-  DWORD offPalEntries;
-  LOGPALETTEENTRY paletteBuffer[nPalEntries];
-  DWORD SizeLast;
-} EMREOF;
 
-/** 1.1 EMR_ALPHABLEND
+//------------------------------------------------
+// 2.3.1. Bitmap Record Types
+//------------------------------------------------
+
+/** 2.3.1.1 EMR_ALPHABLEND Record
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/34e07d4f-aee6-4b63-a4bb-96996ad47669
  */
 typedef struct tagEMRALPHABLEND {
@@ -646,14 +735,14 @@ typedef struct tagEMRALPHABLEND {
   }
 } EMRALPHABLEND;
 
-/** 1.2 EMR_BITBLT Record
+/** 2.3.1.2 EMR_BITBLT Record
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/347d1c44-1847-47ec-8762-7059e9e9b185
  */
 typedef struct tagEMRBITBLT {
   local uint emrOffset = FTell();
   FSeek(emrOffset);
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL rclBounds;
   DWORD xDest;
   DWORD yDest;
@@ -679,7 +768,7 @@ typedef struct tagEMRBITBLT {
   }
 } EMRBITBLT;
 
-/** 1.3 EMR_MASKBLT
+/** 2.3.1.3 EMR_MASKBLT Records
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/e6f715c0-d034-4eb3-952e-f8ee66adb9ed
  */
 typedef struct tagEMRMASKBLT {
@@ -727,7 +816,7 @@ typedef struct tagEMRMASKBLT {
   }
 } EMRMASKBLT;
 
-/** 1.4 EMR_PLGBLT
+/** 2.3.1.4 EMR_PLGBLT Record
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/b6c8b39d-42c7-4221-ab70-93f1e09b644e
  */
 typedef struct tagEMRPLGBLT {
@@ -773,7 +862,7 @@ typedef struct tagEMRPLGBLT {
   }
 } EMRPLGBLT;
 
-/** 1.5 EMR_SETDIBITSTODEVICE
+/** 2.3.1.5 EMR_SETDIBITSTODEVICE Record
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/e8816cc6-35d2-43e6-8d88-d69cd342372e
  */
 typedef struct {
@@ -805,7 +894,7 @@ typedef struct {
   }
 } EMRSETDIBITSTODEVICE;
 
-/** 1.6 EMR_STRETCHBLT
+/** 2.3.1.6 EMR_STRETCHBLT Record
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/0dd551f3-80f7-4852-89c2-9ddba803a192
  */
 typedef struct tagEMRSTRETCHBLT {
@@ -840,14 +929,14 @@ typedef struct tagEMRSTRETCHBLT {
   }
 } EMRSTRETCHBLT;
 
-/** 1.7 EMR_STRETCHDIBITS
+/** 2.3.1.7 EMR_STRETCHDIBITS Record
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/89c0d808-0dea-413f-be40-2e9e51fa36ac
  */
 typedef struct tagEMRSTRETCHDIBITS {
   local uint emrOffset = FTell();
   FSeek(emrOffset);
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL rclBounds;
   DWORD xDest;
   DWORD yDest;
@@ -873,7 +962,7 @@ typedef struct tagEMRSTRETCHDIBITS {
   }
 } EMRSTRETCHDIBITS;
 
-/** 1.8 EMR_TRANSPARENTBLT
+/** 2.3.1.8 EMR_TRANSPARENTBLT Record
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/aa216051-2dc0-4317-b343-525431cfa103
  */
 typedef struct tagEMRTRANSPARENTBLT {
@@ -908,7 +997,12 @@ typedef struct tagEMRTRANSPARENTBLT {
   }
 } EMRTRANSPARENTBLT;
 
-/** 2.1 EMR_EXCLUDECLIPRECT Record
+
+//------------------------------------------------
+// 2.3.2. Clipping Record Types
+//------------------------------------------------
+
+/** 2.3.2.1 EMR_EXCLUDECLIPRECT Record
  * https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-emrexcludecliprect
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/a521411e-b877-4199-abb6-b4514b3574f8
  */
@@ -918,7 +1012,7 @@ typedef struct tagEMREXCLUDECLIPRECT {
   RECTL rclClip;
 } EMREXCLUDECLIPRECT;
 
-/** 2.2 EMR_EXTSELECTCLIPRGN
+/** 2.3.2.2 EMR_EXTSELECTCLIPRGN Record
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/c6b9f4e6-27f6-4a4d-a383-c2daf5da11d9
  */
 typedef struct tagEMREXTSELECTCLIPRGN {
@@ -926,133 +1020,245 @@ typedef struct tagEMREXTSELECTCLIPRGN {
   DWORD nSize;
   DWORD rgnDataSize;
   RegionMode rgnMode;
-  REGIONDATA rgnData <optimize=false>;
+  REGIONDATA rgnData;
 } EMREXTSELECTCLIPRGN;
 
-/** 2.4 EMR_OFFSETCLIPRGN Record
+/** 2.3.2.3 EMR_INTERSECTCLIPRECT Record
+ * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/13cd0c98-d4e9-4ca7-a79d-58055bf45c79
+ */
+typedef struct tagEMRINTERSECTCLIPRECT {
+  EmfRecordType iType;
+  DWORD nSize;
+  RECTL rclClip;
+} EMRINTERSECTCLIPRECT;
+
+/** 2.3.2.4 EMR_OFFSETCLIPRGN Record
  * https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-emroffsetcliprgn
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/8bf2b60d-3b19-4bd1-b2d7-c89b027ad808
  */
 typedef struct tagEMROFFSETCLIPRGN {
   EmfRecordType iType;
   DWORD nSize;
-  POINT offset;
+  POINTL Offset;
 } EMROFFSETCLIPRGN;
 
-/** 2.5 EMR_SELECTCLIPPATH
+/** 2.3.2.5 EMR_SELECTCLIPPATH Record
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/4a26bcf8-6607-4a09-8ec3-a8768eadc8e8
  */
 typedef struct tagEMRSELECTCLIPPATH {
   EmfRecordType iType;
   DWORD nSize;
-  RegionMode rgnMode;
+  RegionMode iRegionMode;
 } EMRSELECTCLIPPATH;
 
-/** 5.1 EMR_ANGLEARC Record
+
+//------------------------------------------------
+// 2.3.4. Control Record Types
+//------------------------------------------------
+
+/** 2.3.4.1 EMR_EOF Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/3f47fde0-0e6b-40c1-87f3-f4129af03aa1
+ */
+typedef struct {
+  local uint emrOffset = FTell();
+  EmfRecordType iType;
+  DWORD nSize;
+  DWORD nPalEntries;
+  DWORD offPalEntries;
+  if (nPalEntries) {
+    FSeek(emrOffset+offPalEntries);
+    LOGPALETTEENTRY paletteBuffer[nPalEntries];
+  }
+  DWORD SizeLast;
+} EMREOF;
+
+/** 2.3.4.2.1 EMR_HEADER Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/80c0684b-9a0e-4bdb-8d6d-0e5a9e9673e7
+ */
+typedef struct {
+  EmfRecordType iType;     // Record type EMR_HEADER.
+  DWORD   nSize;           // Record size in bytes. This may be greater
+                           // than the sizeof(ENHMETAHEADER).
+  RECTL   rclBounds;       // Inclusive-inclusive bounds in device units.
+  RECTL   rclFrame;        // Inclusive-inclusive Picture Frame of 
+                           // metafile in .01 mm units. 
+  DWORD   dSignature;      // Signature.  Must be ENHMETA_SIGNATURE.
+  DWORD   nVersion;        // Version number.
+  DWORD   nBytes;          // Size of the metafile in bytes.
+  DWORD   nRecords;        // Number of records in the metafile.
+  WORD    nHandles;        // Number of handles in the handle table.
+                           // Handle index zero is reserved.
+  WORD    sReserved;       // Reserved.  Must be zero.
+  DWORD   nDescription;    // Number of chars in the unicode description string.
+                           // This is 0 if there is no description string.
+  DWORD   offDescription;  // Offset to the metafile description record.
+                           // This is 0 if there is no description string.
+  DWORD   nPalEntries;     // Number of entries in the metafile palette.
+  SIZEL   szlDevice;       // Size of the reference device in pixels. 
+  SIZEL   szlMillimeters;  // Size of the reference device in millimeters.
+  HeaderExtension1 EmfHeaderExtension1;
+  HeaderExtension2 EmfHeaderExtension2;
+} EMRHEADER;
+
+typedef struct {
+  WORD desc[EmfHeader.nDescription];
+} EMRDESCRIPTION;
+
+
+//------------------------------------------------
+// 2.3.5. Drawing Record Types
+//------------------------------------------------
+
+/** 2.3.5.1 EMR_ANGLEARC Record
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/3b04a2e2-9ba5-477f-b79c-5710635d04b9
  */
 typedef struct tagEMRANGLEARC {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   POINT ptlCenter;
   DWORD nRadius;
   FLOAT eStartAngle;
   FLOAT eSweepAngle;
 } EMRANGLEARC;
 
-/** 5.2 EMR_ARC Record
+/** 2.3.5.2 EMR_ARC Record
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/3e148f19-7e75-43aa-9259-fda562f60315
  */
 typedef struct tagEMRARC {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL rclBox;
   POINT ptlStart;
   POINT ptlEnd;
 } EMRARC;
 
-/** 5.3 EMR_ARCTO
+/** 2.3.5.3 EMR_ARCTO
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/51b4a890-bfd4-496e-bbd9-dbde9ad49d1c
  */
 typedef struct tagEMRARCTO {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL rclBox;
   POINT ptlStart;
   POINT ptlEnd;
 } EMRARCTO;
 
-/** 5.4 EMR_CHORD
+/** 2.3.5.4 EMR_CHORD
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/b442d2fb-f92b-4103-aa7d-44f864f719d5
  */
 typedef struct tagEMRCHORD {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL rclBox;
   POINT ptlStart;
   POINT ptlEnd;
 } EMRCHORD;
 
-/** 5.5 EMR_ELLIPSE
+/** 2.3.5.5 EMR_ELLIPSE
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/d9462a32-d188-40e7-bf72-05614ec4ff18
  */
 typedef struct tagEMRELLIPSE {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL rclBox;
 } EMRELLIPSE;
 
-/** 5.6 EMR_EXTFLOODFILL
+/** 2.3.5.6 EMR_EXTFLOODFILL
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/4f1b52ba-325a-4da8-bd5b-987c4a572e5f
  */
 typedef struct tagEMREXTFLOODFILL {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   POINT ptlStart;
   COLORREF crColor;
   DWORD iMode;
 } EMREXTFLOODFILL;
 
-/** 5.7 EMR_EXTTEXTOUTA
+/** 2.3.5.7 EMR_EXTTEXTOUTA
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/6b582a71-3c29-4fc6-a0f4-1f8a313739a1
  */
 typedef struct tagEMREXTTEXTOUTA {
+  local uint emrOffset = FTell();
+  FSeek(emrOffset);
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL rclBounds;
   DWORD iGraphicsMode;
   FLOAT exScale;
   FLOAT eyScale;
-  EMRTEXT emrtext;
+  struct {
+    POINT ptlReference;
+    DWORD nChars;
+    DWORD offString;
+    DWORD fOptions;
+    RECTL rcl;
+    DWORD offDx;
+    if (nChars) {
+      FSeek(emrOffset+offString);
+      BYTE bStringBuffer[nChars];
+      FSeek(emrOffset+offDx);
+      DWORD OutputDx[nChars];
+    }
+  } aEmrText;
+  FSeek(emrOffset+nSize);
 } EMREXTTEXTOUTA;
 
-/** 5.9 EMR_FILLPATH
+/** 2.3.5.8 EMR_EXTTEXTOUTW Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/a59a79ac-328e-492d-a34d-e02727af6edf
+ */
+typedef struct {
+  local uint emrOffset = FTell();
+  FSeek(emrOffset);
+  EmfRecordType iType;
+  DWORD nSize;
+  RECTL rclBounds;
+  DWORD iGraphicsMode;
+  FLOAT exScale;
+  FLOAT eyScale;
+  struct {
+    POINT ptlReference;
+    DWORD nChars;
+    DWORD offString;
+    DWORD fOptions;
+    RECTL rcl;
+    DWORD offDx;
+    if (nChars) {
+      FSeek(emrOffset+offString);
+      WORD bStringBuffer[nChars];
+      FSeek(emrOffset+offDx);
+      DWORD OutputDx[nChars];
+    }
+  } wEmrText;
+  FSeek(emrOffset+nSize);
+} EMREXTTEXTOUTW;
+
+/** 2.3.5.9 EMR_FILLPATH
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/7cc0afcb-0693-4810-a3cb-b69c871ce473
  */
 typedef struct tagEMRFILLPATH {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL rclBounds;
 } EMRFILLPATH;
 
-/** 5.10 EMR_FILLRGN
+/** 2.3.5.10 EMR_FILLRGN
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/a1bb0f88-bb22-4956-b45a-7005546561cc
  */
 typedef struct tagEMRFILLRGN {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL rclBounds;
   DWORD rgnDataSize;
   DWORD ihBrush;
   REGIONDATA rgnData <optimize=false>;
 } EMRFILLRGN;
 
-/** 5.11 EMR_FRAMERGN
+/** 2.3.5.11 EMR_FRAMERGN
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/c370fc16-9045-467b-a125-7239428df6b3
  */
 typedef struct tagEMRFRAMERGN {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL rclBounds;
   DWORD rgnDataSize;
   DWORD ihBrush;
@@ -1061,12 +1267,12 @@ typedef struct tagEMRFRAMERGN {
   REGIONDATA rgnData <optimize=false>;
 } EMRFRAMERGN;
 
-/** 5.12 EMR_GRADIENTFILL
+/** 2.3.5.12 EMR_GRADIENTFILL
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/1a3849c8-be6c-4d30-b5d3-f43b4c70ca0d
  */
 typedef struct tagEMRGRADIENTFILL {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL rclBounds;
   DWORD nVer;
   DWORD nTri;
@@ -1076,190 +1282,224 @@ typedef struct tagEMRGRADIENTFILL {
   DWORD vPadding[nTri];
 } EMRGRADIENTFILL;
 
-/** 5.13 EMR_LINETO
+/** 2.3.5.13 EMR_LINETO
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/9b3eccf9-4a55-4a9c-b0df-3c495e7b9a8c
  */
 typedef struct tagEMRLINETO {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   POINT ptl;
 } EMRLINETO;
 
-/** 5.14 EMR_PAINTRGN
+/** 2.3.5.14 EMR_PAINTRGN
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/68c457dc-6df3-4609-b6f9-e28e5ca4d9c1
  */
 typedef struct tagEMRPAINTRGN {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL rclBounds;
   DWORD rgnDataSize;
   REGIONDATA rgnData <optimize=false>;
 } EMRPAINTRGN;
 
-/** 5.15 EMR_PIE
+/** 2.3.5.15 EMR_PIE
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/c326f6b2-ae7e-447f-b8dc-02c703f054c3
  */
 typedef struct tagEMRPIE {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL box;
   POINT start;
   POINT stop;
 } EMRPIE;
 
-/** 5.16 EMR_POLYBEZIER Record
+/** 2.3.5.16 EMR_POLYBEZIER Record
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/4e53793a-95af-49d4-ae1f-4c407eda9440
  */
 typedef struct tagEMRPOLYBEZIER {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL rclBounds;
   DWORD cntPoints;
-  POINT aPoints[cntPoints];
+  POINTL aPoints[cntPoints];
 } EMRPOLYBEZIER;
 
-/** 5.18 EMR_POLYBEZIERTO Record
+/** 2.3.5.17 EMR_POLYBEZIER16 Record
+ * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/4e53793a-95af-49d4-ae1f-4c407eda9440
+ */
+typedef struct tagEMRPOLYBEZIER16 {
+  EmfRecordType iType;
+  DWORD nSize;
+  RECTL rclBounds;
+  DWORD cntPoints;
+  POINTS aPoints[cntPoints];
+} EMRPOLYBEZIER16;
+
+/** 2.3.5.18 EMR_POLYBEZIERTO Record
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/28431e45-a874-41dc-864d-8f4f69e8e831
  */
 typedef struct tagEMRPOLYBEZIERTO {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL rclBounds;
   DWORD cntPoints;
   POINT aPoints[cntPoints];
 } EMRPOLYBEZIERTO;
 
-/** 5.20 EMR_POLYDRAW Record
+/** 2.3.5.20 EMR_POLYDRAW Record
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/95794faf-eed8-4d5b-b6ff-c6765a58166e
  */
 typedef struct tagEMRPOLYDRAW {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL rclBounds;
   DWORD cntPoints;
   POINT aPoints[cntPoints];
   BYTE abTypes[cntPoints];
 } EMRPOLYDRAW;
 
-/** 5.22 EMR_POLYGON Record
+/** 2.3.5.22 EMR_POLYGON Record
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/eb916781-58b6-4e92-b606-68071aa65733
  */
 typedef struct tagEMRPOLYGON {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL rclBounds;
   DWORD cntPoints;
   POINT aPoints[cntPoints];
 } EMRPOLYGON;
 
-/** 5.24 EMR_POLYLINE Record
+/** 2.3.5.23 EMR_POLYGON16 Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/ac6d65ac-9d39-4393-82eb-b58fa0c0f635
+ */
+typedef struct {
+  EmfRecordType iType;
+  DWORD nSize;
+  RECTL rclBounds;
+  DWORD cntPoints;
+  POINTS aPoints[cntPoints];
+} EMRPOLYGON16;
+
+/** 2.3.5.24 EMR_POLYLINE Record
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/9ce6c9bb-1a13-48a5-9aa2-d95b334b5358
  */
 typedef struct tagEMRPOLYLINE {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL rclBounds;
   DWORD cntPoints;
   POINT aPoints[cntPoints];
 } EMRPOLYLINE;
 
-/** 5.26 EMR_POLYLINETO Record
+/** 2.3.5.25 EMR_POLYLINE16 Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/ca3a6590-c023-4354-8d6d-e3d40d7eb5b9
+ */
+typedef struct {
+  EmfRecordType iType;
+  DWORD nSize;
+  RECTL rclBounds;
+  DWORD cntPoints;
+  POINTS aPoints[cntPoints];
+} EMRPOLYLINE16;
+
+/** 2.3.5.26 EMR_POLYLINETO Record
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/a2d8b738-8351-4a9c-9f3a-a6a8481c4c6f
  */
 typedef struct tagEMRPOLYLINETO {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL rclBounds;
   DWORD cntPoints;
   POINT aPoints[cntPoints];
 } EMRPOLYLINETO;
 
-/** 5.28 EMR_POLYPOLYGON Record
+/** 2.3.5.28 EMR_POLYPOLYGON Record
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/c60ff127-2711-42d3-85d4-502ca2e4caef
  */
 typedef struct tagEMRPOLYPOLYGON {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL rclBounds;
   DWORD nPolys;
   DWORD cntPoints;
-  DWORD aPolyCounts;
+  DWORD aPolyCounts[nPolys];
   POINT aPoints[cntPoints];
 } EMRPOLYPOLYGON;
 
-/** 5.30 EMR_POLYPOLYLINE Record
+/** 2.3.5.30 EMR_POLYPOLYLINE Record
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/e23f75fd-3af6-49f3-8c86-ef121ff61701
  */
 typedef struct tagEMRPOLYPOLYLINE {
   EmfRecordType iType ;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL rclBounds;
   DWORD nPolys;
   DWORD cntPoints;
-  DWORD aPolyCounts;
+  DWORD aPolyCounts[nPolys];
   POINT aPoints[cntPoints];
 } EMRPOLYPOLYLINE;
 
-/** 5.32 EMR_POLYTEXTOUTA
+/** 2.3.5.32 EMR_POLYTEXTOUTA
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/d8b7ac21-76b8-4f9a-a7cc-05f9d2d5627e
  */
 typedef struct tagEMRPOLYTEXTOUTA {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL rclBounds;
   DWORD iGraphicsMode;
   FLOAT exScale;
   FLOAT eyScale;
   LONG cStrings;
-  EMRTEXT aemrtext[cStrings];
+  EMRTEXTA aemrtext[cStrings];
 } EMRPOLYTEXTOUTA;
 
-/** 5.34 EMR_RECTANGLE
+/** 2.3.5.34 EMR_RECTANGLE
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/3c471238-0a02-4992-90a2-bfd2afd98f2a
  */
 typedef struct tagEMRRECTANGLE {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL rclBox;
 } EMRRECTANGLE;
 
-/** 5.35 EMR_ROUNDRECT
+/** 2.3.5.35 EMR_ROUNDRECT
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/2e4f55a1-5f69-4a81-8329-423eeedb3812
  */
 typedef struct tagEMRROUNDRECT {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL rclBox;
   SIZEL szlCorner;
 } EMRROUNDRECT;
 
-/** 5.36 EMR_SETPIXELV Record
+/** 2.3.5.36 EMR_SETPIXELV Record
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/21d44fb9-b3c7-4ce7-a402-7601f34d0cda
  */
 typedef struct tagEMRSETPIXELV {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   POINT ptlPixel;
   COLORREF crColor;
 } EMRSETPIXELV;
 
-/** 5.38 EMR_STROKEANDFILLPATH
+/** 2.3.5.38 EMR_STROKEANDFILLPATH
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/2794792a-38b4-4d19-adec-28fc2a6273b2
  */
 typedef struct tagEMRSTROKEANDFILLPATH {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL rclBounds;
 } EMRSTROKEANDFILLPATH;
 
-/** 5.39 EMR_STROKEPATH
+/** 2.3.5.39 EMR_STROKEPATH
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/c8b86df6-7464-45b0-bca4-6ffab9174961
  */
 typedef struct tagEMRSTROKEPATH {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL rclBounds;
 } EMRSTROKEPATH;
+
 
 //------------------------------------------------
 // 6. Escape Record Types
@@ -1270,7 +1510,7 @@ typedef struct tagEMRSTROKEPATH {
  */
 typedef struct tagEMRDRAWESCAPE {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   MetafileEscapes iEscape;
   DWORD cjln;
   BYTE data[cjln];
@@ -1281,7 +1521,7 @@ typedef struct tagEMRDRAWESCAPE {
  */
 typedef struct tagEMREXTESCAPE {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   MetafileEscapes iEscape;
   DWORD cjln;
   BYTE data[cjln];
@@ -1292,7 +1532,7 @@ typedef struct tagEMREXTESCAPE {
  */
 typedef struct tagEMRNAMEDESCAPE {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   MetafileEscapes iEscape;
   DWORD cjDriver;
   DWORD cjln;
@@ -1300,32 +1540,37 @@ typedef struct tagEMRNAMEDESCAPE {
   BYTE data[cjln];
 } EMRNAMEDESCAPE;
 
-/** 7.1 EMR_CREATEBRUSHINDIRECT Record
+
+//------------------------------------------------
+// 7. Object Creation Record Types
+//------------------------------------------------
+
+/** 2.3.7.1 EMR_CREATEBRUSHINDIRECT Record
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/b9a8ef5d-0089-4e42-b317-e6ebc0ff098f
  */
 typedef struct tagEMRCREATEBRUSHINDIRECT {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   DWORD ihBrush;
   LogBrushEx LogBrush;
 } EMRCREATEBRUSHINDIRECT;
 
-/** 7.2 EMR_CREATECOLORSPACE
+/** 2.3.7.2 EMR_CREATECOLORSPACE
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/954af0ff-a8d7-4d34-80ed-89f570bac016
  */
 typedef struct tagEMRCREATECOLORSPACE {
   EmfRecordType iType;
-  DWORD	ihCS;
+  DWORD ihCS;
   DWORD ics;
   LOGCOLORSPACEA lcs;
 } EMRCREATECOLORSPACE;
 
-/** 7.3 EMR_CREATECOLORSPACEW
+/** 2.3.7.3 EMR_CREATECOLORSPACEW
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/d1cd2147-7fb6-4d97-8f7e-a289006b6064
  */
 typedef struct tagEMRCREATECOLORSPACEW {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   DWORD ihCS;
   LOGCOLORSPACEW lcs;
   DWORD dwFlags;
@@ -1333,14 +1578,14 @@ typedef struct tagEMRCREATECOLORSPACEW {
   BYTE Data[cbData];
 } EMRCREATECOLORSPACEW;
 
-/** 7.4 EMR_CREATEDIBPATTERNBRUSHPT
+/** 2.3.7.4 EMR_CREATEDIBPATTERNBRUSHPT
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/332116b4-c6f9-4b18-a7cc-22c531b52afc
  */
 typedef struct tagEMRCREATEDIBPATTERNBRUSHPT {
   local uint emrOffset = FTell();
   FSeek(emrOffset);
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   DWORD ihBrush;
   DWORD iUsage;
   DWORD offBmi;
@@ -1354,14 +1599,14 @@ typedef struct tagEMRCREATEDIBPATTERNBRUSHPT {
   }
 } EMRCREATEDIBPATTERNBRUSHPT;
 
-/** 7.5 EMR_CREATEMONOBRUSH
+/** 2.3.7.5 EMR_CREATEMONOBRUSH
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/49b42277-31b0-4eb9-a6af-86d9be9b568f
  */
 typedef struct tagEMRCREATEMONOBRUSH {
   local uint emrOffset = FTell();
   FSeek(emrOffset);
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   DWORD ihBrush;
   DWORD iUsage;
   DWORD offBmi;
@@ -1375,41 +1620,81 @@ typedef struct tagEMRCREATEMONOBRUSH {
   }
 } EMRCREATEMONOBRUSH;
 
-/** 7.6 EMR_CREATEPALETTE
+/** 2.3.7.6 EMR_CREATEPALETTE
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/07e1492b-e4bb-4394-934f-4eaee67ab8ff
  */
 typedef struct tagEMRCREATEPALETTE {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   DWORD ihPal;
   LOGPALETTE lgpl;
 } EMRCREATEPALETTE;
 
-/** 7.7 EMR_CREATEPEN
+/** 2.3.7.7 EMR_CREATEPEN
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/2374647f-df67-48e3-86aa-384715c28e71
  */
 typedef struct tagEMRCREATEPEN {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   DWORD ihPen;
   LOGPEN lopn;
 } EMRCREATEPEN;
 
-/** 7.9 EMR_EXTCREATEPEN
+typedef struct tagLOGFONTA {
+  LONG lfHeight;
+  LONG lfWidth;
+  LONG lfEscapement;
+  LONG lfOrientation;
+  LONG lfWeight;
+  BYTE lfItalic;
+  BYTE lfUnderline;
+  BYTE lfStrikeOut;
+  BYTE lfCharSet;
+  BYTE lfOutPrecision;
+  BYTE lfClipPrecision;
+  BYTE lfQuality;
+  BYTE lfPitchAndFamily;
+  CHAR lfFaceName[32];
+} LOGFONTA;
+
+/*
+// https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-extlogfontw
+typedef struct tagEXTLOGFONTW {
+  LOGFONTW elfLogFont;
+  WCHAR    elfFullName[64];
+  WCHAR    elfStyle[32];
+  DWORD    elfVersion;
+  DWORD    elfStyleSize;
+  DWORD    elfMatch;
+  DWORD    elfReserved;
+  BYTE     elfVendorId[4];
+  DWORD    elfCulture;
+  PANOSE   elfPanose;
+} EXTLOGFONTW;
+
+typedef struct tagEMREXTCREATEFONTINDIRECTW {
+  DWORD iType = { 0x00000051 };
+  DWORD	nSize = { emrSize };
+  DWORD ihFont;
+  EXTLOGFONTW elfw;
+} EMREXTCREATEFONTINDIRECTW;
+*/
+
+/** 2.3.7.9 EMR_EXTCREATEPEN
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/d7f51e05-4024-497c-ad4a-8aeca9d34256
  */
 typedef struct tagEMREXTCREATEPEN {
   local uint emrOffset = FTell();
   FSeek(emrOffset);
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   DWORD ihPen;
   DWORD offBmi;
   DWORD cbBmi;
   DWORD offBits;
   DWORD cbBits;
   LOGPENEX elp;
-  //FSeek(emrOffset+offBmi);
+  FSeek(emrOffset+offBmi);
   if (cbBits != 0) {
     BITMAPINFO BmiSrc;
     BYTE BitsSrc[cbBits];
@@ -1426,7 +1711,7 @@ typedef struct tagEMREXTCREATEPEN {
  */
 typedef struct tagCOLORCORRECTPALETTE {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   DWORD ihPalette;
   DWORD nFirstEntry;
   DWORD nPalEntries;
@@ -1438,7 +1723,7 @@ typedef struct tagCOLORCORRECTPALETTE {
  */
 typedef struct tagEMRDELETECOLORSPACE {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   DWORD ihCS;
 } EMRDELETECOLORSPACE;
 
@@ -1447,7 +1732,7 @@ typedef struct tagEMRDELETECOLORSPACE {
  */
 typedef struct tagEMRDELETEOBJECT {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   DWORD ihCS;
 } EMRDELETEOBJECT;
 
@@ -1456,7 +1741,7 @@ typedef struct tagEMRDELETEOBJECT {
  */
 typedef struct tagEMRRESIZEPALETTE {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   DWORD ihPal;
   DWORD NumberOfEntries;
 } EMRRESIZEPALETTE;
@@ -1466,7 +1751,7 @@ typedef struct tagEMRRESIZEPALETTE {
  */
 typedef struct {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   DWORD ihObject;
 } EMRSELECTOBJECT;
 
@@ -1475,7 +1760,7 @@ typedef struct {
  */
 typedef struct tagEMRSELECTPALETTE {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   DWORD ihPal;
 } EMRSELECTPALETTE;
 
@@ -1484,7 +1769,7 @@ typedef struct tagEMRSELECTPALETTE {
  */
 typedef struct tagEMRSETCOLORSPACE {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   DWORD ihCS;
 } EMRSETCOLORSPACE;
 
@@ -1493,7 +1778,7 @@ typedef struct tagEMRSETCOLORSPACE {
  */
 typedef struct tagEMRSETPALETTEENTRIES {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   DWORD ihPal;
   DWORD iStart;
   DWORD cEntries;
@@ -1510,7 +1795,7 @@ typedef struct tagEMRSETPALETTEENTRIES {
  */
 typedef struct tagEMRGLSBOUNDEDRECORD {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   RECTL rclBounds;
   DWORD cbData;
   BYTE Data[cbData];
@@ -1521,7 +1806,7 @@ typedef struct tagEMRGLSBOUNDEDRECORD {
  */
 typedef struct tagEMRGLSRECORD {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   DWORD cbData;
   BYTE Data[cbData];
 } EMRGLSRECORD;
@@ -1533,27 +1818,27 @@ typedef struct tagEMRGLSRECORD {
 
 typedef struct tagEMRBEGINPATH {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
 } EMRBEGINPATH;
 
 typedef struct tagEMRENDPATH {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
 } EMRENDPATH;
 
 typedef struct tagEMRCLOSEFIGURE {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
 } EMRCLOSEFIGURE;
 
 typedef struct tagEMRFLATTENPATH {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
 } EMRFLATTENPATH;
 
 typedef struct tagEMRWIDENPATH {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
 } EMRWIDENPATH;
 
 typedef struct tagEMRABORTPATH {
@@ -1561,11 +1846,12 @@ typedef struct tagEMRABORTPATH {
   DWORD nSize;
 } EMRABORTPATH;
 
+
 //------------------------------------------------
 // 11. State Record Types
 //------------------------------------------------
 
-/** 2.3.11.1 EMR_COLORMATCHTOTARGETW Record
+/** 11.1 EMR_COLORMATCHTOTARGETW Record
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/b9e3e8fa-1d07-4475-b0f2-d157eeca5417
  */
 typedef struct {
@@ -1578,7 +1864,7 @@ typedef struct {
   BYTE data[cbName + cbData];
 } EMRCOLORMATCHTOTARGETW;
 
-/** 2.3.11.2 EMR_FORCEUFIMAPPING Record
+/** 11.2 EMR_FORCEUFIMAPPING Record
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/e9a05924-e704-4037-8312-6bef2e19f6bd
  */
 typedef struct {
@@ -1587,7 +1873,7 @@ typedef struct {
   UniversalFontId ufi;
 } EMRFORCEUFIMAPPING;
 
-/** 2.3.11.3 EMR_INVERTRGN Record
+/** 11.3 EMR_INVERTRGN Record
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/5cbc44de-ad40-47b6-a0f8-6179b9eef738
  */
 typedef struct {
@@ -1598,19 +1884,175 @@ typedef struct {
   BYTE rgnData[nRgnDataSize];
 } EMRINVERTRGN;
 
+/** 11.4 EMR_MOVETOEX Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/8ae57e5a-22e3-4352-98ca-09628f47c693
+ */
+typedef struct {
+  EmfRecordType iType;
+  DWORD nSize;
+  POINTL Offset;
+} EMRMOVETOEX;
+
+/** 11. EMR_REALIZEPALETTE Record
+ *
+ */
+typedef struct {
+  EmfRecordType iType;
+  DWORD nSize;
+} EMRREALIZEPALETTE;
+
+/** 11. EMR_SAVEDC Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/d3420f26-25b4-4adf-9995-f07d941a3bdc
+ */
+typedef struct {
+  EmfRecordType iType;
+  DWORD nSize;
+} EMRSAVEDC;
+
+/** 2.3.11.6 EMR_RESTOREDC Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/efa2f180-4c7e-4a7b-b4ef-a1d06a0ce89f
+ */
+typedef struct {
+  EmfRecordType iType;
+  DWORD nSize;
+  DWORD SavedDC;
+} EMRRESTOREDC;
+
+/** 11.10 EMR_SETBKCOLOR Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/24f40952-62d4-40b0-ba40-aad8fb4fc421
+ */
+typedef struct {
+  EmfRecordType iType;
+  DWORD nSize;
+  COLORREF crColor;
+} EMRSETBKCOLOR;
+
+/** 11.11 EMR_SETBKMODE Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/7c584a42-b6dd-47b8-a0b6-f529133292f4
+ */
+typedef struct {
+  EmfRecordType iType;
+  DWORD nSize;
+  BackgroundMode iBackgroundMode;
+} EMRSETBKMODE;
+
+/** 11.19 EMR_SETMAPMODE Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/aa4ad35d-fa42-4a4f-959a-8b41304e1b05
+ */
+typedef struct {
+  EmfRecordType iType;
+  DWORD nSize;
+  MapMode iMapMode;
+} EMRSETMAPMODE;
+
+/** 2.3.11.21 EMR_SETMITERLIMIT Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/2637d0d0-92dd-48e8-be5e-6400b4d1fc5e
+ */
+typedef struct {
+  EmfRecordType iType;
+  DWORD nSize;
+  FLOAT eMiterLimit;
+} EMRSETMITERLIMIT;
+
+/** 2.3.11.22 EMR_SETPOLYFILLMODE Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/e8799c80-fe74-45c1-bf6d-3eb78edd4ed2
+ */
+typedef struct {
+  EmfRecordType iType;
+  DWORD nSize;
+  PolygonFillMode iPolygonFillMode;
+} EMRSETPOLYFILLMODE;
+
+/** 11.24 EMR_SETSTRETCHBLTMODE Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/ff00ab98-6e2c-4eca-b664-04ab2956b6a5
+ */
+typedef struct {
+  EmfRecordType iType;
+  DWORD nSize;
+  StretchMode iStretchMode;
+} EMRSETSTRETCHBLTMODE;
+
+/** 11.25 EMR_SETTEXTALIGN Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/a49bb565-a583-41da-8d4a-8a0314b3e397
+ */
+typedef struct {
+  EmfRecordType iType;
+  DWORD nSize;
+  DWORD iTexAlignmentMode;
+} EMRSETTEXTALIGN;
+
+/** 11.25 EMR_SETTEXTCOLOR Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/1ae5c616-cf8e-4f5d-a7c3-bfc1f70ece28
+ */
+typedef struct {
+  EmfRecordType iType;
+  DWORD nSize;
+  COLORREF crColor;
+} EMRSETTEXTCOLOR;
+
+/** 11.28 EMR_SETVIEWPORTEXTEX Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/a71486a3-9ebd-43e3-819f-5318a58b70d5
+ */
+typedef struct {
+  EmfRecordType iType;
+  DWORD nSize;
+  SIZEL szlExtent;
+} EMRSETVIEWPORTEXTEX;
+
+/** 11.29 EMR_SETVIEWPORTORGEX Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/b8948947-3f8d-4add-a4b8-e572e8f90506
+ */
+typedef struct {
+  EmfRecordType iType;
+  DWORD nSize;
+  POINTL ptlOrigin;
+} EMRSETVIEWPORTORGEX;
+
+/** 11.30 EMR_SETWINDOWEXTEX Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/19521483-60b5-49b8-b58c-4b5d1b6cf839
+ */
+typedef struct {
+  EmfRecordType iType;
+  DWORD nSize;
+  SIZEL szlExtent;
+} EMRSETWINDOWEXTEX;
+
+/** 11.31 EMR_SETWINDOWORGEX Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/952803a9-3d5c-4c83-a258-558bc1123bdb
+ */
+typedef struct {
+  EmfRecordType iType;
+  DWORD nSize;
+  POINTL ptlOrigin;
+} EMRSETWINDOWORGEX;
+
+//------------------------------------------------
+// 12. Transform Record Types
+//------------------------------------------------
+
+/** 12.2 EMR_SETWORLDTRANSFORM Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/985724c0-4db1-48f0-b346-67288b3288cb
+ */
+typedef struct {
+  EmfRecordType iType;
+  DWORD nSize;
+  XFORM Xform;
+} EMRSETWORLDTRANSFORM;
+
+
 //------------------------------------------------
 // 13. Reserved Record Types
 //------------------------------------------------
 
 typedef struct tagEMRRESERVED107 {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   DWORD ReservedData[8];
 } EMRRESERVED107;
 
 typedef struct tagEMRRESERVED117 {
   EmfRecordType iType;
-  DWORD	nSize;
+  DWORD nSize;
   DWORD ReservedData[8];
 } EMRRESERVED117;
 
@@ -1619,207 +2061,299 @@ typedef struct {
   local int _iType = ReadUInt(FTell());
   
   switch(_iType) {
-    case EMR_POLYBEZIER         : // 0x2
+    case EMR_POLYBEZIER         :     // 0x2
       EMRPOLYBEZIER PolyBezier;
       break;
 
-    case EMR_POLYGON            : // 0x3
+    case EMR_POLYGON            :     // 0x3
       EMRPOLYGON Polygon;
       break;
 
-    case EMR_POLYLINE           : // 0x4 
+    case EMR_POLYLINE           :     // 0x4
       EMRPOLYLINE Polyline;
       break;
 
-    case EMR_POLYBEZIERTO       : // 0x5
+    case EMR_POLYBEZIERTO       :     // 0x5
       EMRPOLYBEZIERTO PolyBezierTo;
       break;
 
-    case EMR_POLYLINETO         : // 0x6
+    case EMR_POLYLINETO         :     // 0x6
       EMRPOLYLINETO PolylineTo;
       break;
 
-    case EMR_POLYPOLYLINE       : // 0x7
+    case EMR_POLYPOLYLINE       :     // 0x7
       EMRPOLYPOLYLINE PolyPolyline;
       break;
 
-    case EMR_POLYPOLYGON        : // 0x8
+    case EMR_POLYPOLYGON        :     // 0x8
       EMRPOLYPOLYGON PolyPolygon;
       break;
 
-    case EMR_SETPIXELV          : // 0xf
+    case EMR_SETWINDOWEXTEX     :     // 0x9
+      EMRSETWINDOWEXTEX SetWindowExtEx;
+      break;
+
+    case EMR_SETWINDOWORGEX     :     // 0xa
+      EMRSETWINDOWORGEX SetWindowOrgEx;
+      break;
+
+    case EMR_SETVIEWPORTEXTEX   :     // 0xb
+      EMRSETVIEWPORTEXTEX SetViewportExtEx;
+      break;
+
+    case EMR_SETVIEWPORTORGEX   :     // 0xc
+      EMRSETVIEWPORTORGEX SetViewportOrgEx;
+      break;    
+
+    case EMR_SETPIXELV          :     // 0xf
       EMRSETPIXELV SetPixelV;
       break;
-
-    case EMR_OFFSETCLIPRGN      : // 0x1a
-      EMROFFSETCLIPRGN OffsetClipRgn;
+      
+    case EMR_SETMAPMODE         :     // 0x11
+      EMRSETMAPMODE SetMapMode;
       break;
 
-    case EMR_EXCLUDECLIPRECT    : // 0x1d
+    case EMR_SETBKMODE          :     // 0x12
+      EMRSETBKMODE SetBkMode;
+      break;
+
+    case EMR_SETPOLYFILLMODE    :     // 0x13
+      EMRSETPOLYFILLMODE SetPolyFillMode;
+      break;
+
+    case EMR_SETSTRETCHBLTMODE  :     // 0x15
+      EMRSETSTRETCHBLTMODE SetStretchMode;
+      break;
+
+    case EMR_SETTEXTALIGN       :     // 0x16
+      EMRSETTEXTALIGN SetTextAlign;
+      break;
+      
+    case EMR_SETTEXTCOLOR       :     // 0x18
+      EMRSETTEXTCOLOR SetTextColor;
+      break;
+
+    case EMR_SETBKCOLOR         :     // 0x19
+      EMRSETBKCOLOR SetBkColor;
+      break;
+
+    case EMR_OFFSETCLIPRGN      :     // 0x1a
+      EMROFFSETCLIPRGN OffsetClipRgn;
+      break;
+      
+    case EMR_MOVETOEX           :     // 0x1b
+      EMRMOVETOEX MoveToEx;
+      break;
+
+    case EMR_EXCLUDECLIPRECT    :     // 0x1d
       EMREXCLUDECLIPRECT ExcludeClipRect;
       break;
 
-    case EMR_SELECTOBJECT       : // 0x25
+    case EMR_INTERSECTCLIPRECT  :     // 0x1e
+      EMREXCLUDECLIPRECT InterSectClipRect;
+      break;
+
+    case EMR_SAVEDC             :     // 0x21
+      EMRSAVEDC SaveDC;
+      break;
+
+    case EMR_RESTOREDC          :     // 0x22
+      EMRRESTOREDC RestoreDC;
+      break;
+
+    case EMR_SETWORLDTRANSFORM  :     // 0x23
+      EMRSETWORLDTRANSFORM SetWorldTranform;
+      break;
+
+    case EMR_SELECTOBJECT       :     // 0x25
       EMRSELECTOBJECT SelectObject;
       break;
 
-    case EMR_CREATEPEN          : // 0x26
+    case EMR_CREATEPEN          :     // 0x26
       EMRCREATEPEN CreatePen;
       break;
 
-    case EMR_CREATEBRUSHINDIRECT: // 0x27
+    case EMR_CREATEBRUSHINDIRECT:     // 0x27
       EMRCREATEBRUSHINDIRECT CreateBrushIndirect;
       break;
 
-    case EMR_DELETEOBJECT       : // 0x28
+    case EMR_DELETEOBJECT       :     // 0x28
       EMRDELETEOBJECT DeleteObject;
       break;
 
-    case EMR_ANGLEARC           : // 0x29
+    case EMR_ANGLEARC           :     // 0x29
       EMRANGLEARC AngleArc;
       break;
+      
+    case EMR_ELLIPSE            :     // 0x2a
+      EMRELLIPSE Ellipse;
+      break;
 
-    case EMR_RECTANGLE          : // 0x2b
+    case EMR_RECTANGLE          :     // 0x2b
       EMRRECTANGLE Rectangle;
       break;
 
-    case EMR_ROUNDRECT          : // 0x2c
+    case EMR_ROUNDRECT          :     // 0x2c
       EMRROUNDRECT RoundRect;
       break;
 
-    case EMR_ARC                : // 0x2d
+    case EMR_ARC                :     // 0x2d
       EMRARC Arc;
       break;
 
-    case EMR_CHORD              : // 0x2e
+    case EMR_CHORD              :     // 0x2e
       EMRCHORD Chord;
       break;
 
-    case EMR_PIE                : // 0x2f
+    case EMR_PIE                :     // 0x2f
       EMRPIE Pie;
       break;
 
-    case EMR_SELECTPALETTE      : // 0x30
+    case EMR_SELECTPALETTE      :     // 0x30
       EMRSELECTPALETTE SelectPalette;
       break;
 
-    case EMR_CREATEPALETTE      : // 0x31
+    case EMR_CREATEPALETTE      :     // 0x31
       EMRCREATEPALETTE CreatePalette;
       break;
 
-    case EMR_SETPALETTEENTRIES  : // 0x32
+    case EMR_SETPALETTEENTRIES  :     // 0x32
       EMRSETPALETTEENTRIES SetPaletteEntries;
       break;
 
-    case EMR_RESIZEPALETTE      : // 0x33
+    case EMR_RESIZEPALETTE      :     // 0x33
       EMRRESIZEPALETTE ResizePalette;
       break;
 
-    case EMR_EXTFLOODFILL       : // 0x35
+    case EMR_EXTFLOODFILL       :     // 0x35
       EMREXTFLOODFILL ExtFloodFill;
       break;
 
-    case EMR_LINETO             : // 0x36
+    case EMR_LINETO             :     // 0x36
       EMRLINETO LineTo;
       break;
 
-    case EMR_ARCTO              : // 0x37
+    case EMR_ARCTO              :     // 0x37
       EMRARCTO ArcTo;
       break;
 
-    case EMR_POLYDRAW           : // 0x38
+    case EMR_POLYDRAW           :     // 0x38
       EMRPOLYDRAW PolyDraw;
       break;
 
-    case EMR_BEGINPATH          : // 0x3b
+    case EMR_SETMITERLIMIT      :     // 0x3a
+      EMRSETMITERLIMIT SetMiterLimit;
+      break;
+
+    case EMR_BEGINPATH          :     // 0x3b
       EMRBEGINPATH BeginPath;
       break;
 
-    case EMR_ENDPATH            : // 0x3c
+    case EMR_ENDPATH            :     // 0x3c
       EMRENDPATH EndPath;
       break;
 
-    case EMR_CLOSEFIGURE        : // 0x3d
+    case EMR_CLOSEFIGURE        :     // 0x3d
       EMRCLOSEFIGURE CloseFigure;
       break;
 
-    case EMR_FILLPATH           : // 0x3e
+    case EMR_FILLPATH           :     // 0x3e
       EMRFILLPATH FillPath;
       break;
 
-    case EMR_STROKEANDFILLPATH  : // 0x3f
+    case EMR_STROKEANDFILLPATH  :     // 0x3f
       EMRSTROKEANDFILLPATH FillPath;
       break;
 
-    case EMR_STROKEPATH         : // 0x40
+    case EMR_STROKEPATH         :     // 0x40
       EMRSTROKEPATH StrokePath;
       break;
 
-    case EMR_FLATTENPATH        : // 0x41
+    case EMR_FLATTENPATH        :     // 0x41
       EMRFLATTENPATH FlattenPath;
       break;
 
-    case EMR_WIDENPATH          : // 0x42
+    case EMR_WIDENPATH          :     // 0x42
       EMRWIDENPATH WidenPath;
       break;
 
-    case EMR_SELECTCLIPPATH     : // 0x43
+    case EMR_SELECTCLIPPATH     :     // 0x43
       EMRSELECTCLIPPATH SelectClipPath;
       break;
 
-    case EMR_ABORTPATH          : // 0x44
+    case EMR_ABORTPATH          :     // 0x44
       EMRABORTPATH AbortPath;
       break;
 
-    case EMR_FILLRGN            : // 0x47
+    case EMR_FILLRGN            :     // 0x47
       EMRFILLRGN FillRgn;
       break;
 
-    case EMR_FRAMERGN           : // 0x48
+    case EMR_FRAMERGN           :     // 0x48
       EMRFRAMERGN FrameRgn;
       break;
 
-    case EMR_INVERTRGN          : // 0x49
+    case EMR_INVERTRGN          :     // 0x49
       EMRINVERTRGN InvertRgn;
       break;
 
-    case EMR_PAINTRGN           : // 0x4a
+    case EMR_PAINTRGN           :     // 0x4a
       EMRPAINTRGN PaintRgn;
       break;
 
-    case EMR_EXTSELECTCLIPRGN   : // 0x4b
+    case EMR_EXTSELECTCLIPRGN   :     // 0x4b
       EMREXTSELECTCLIPRGN ExtSelectClipRgn;
       break;
 
-    case EMR_BITBLT             : // 0x4c
+    case EMR_BITBLT             :     // 0x4c
       EMRBITBLT BitBlt;
       break;
 
-    case EMR_STRETCHBLT         : // 0x4d
+    case EMR_STRETCHBLT         :     // 0x4d
       EMRSTRETCHBLT StretchBlt;
       break;
 
-    case EMR_MASKBLT            : // 0x4e
+    case EMR_MASKBLT            :     // 0x4e
       EMRMASKBLT MaskBlt;
       break;
 
-    case EMR_PLGBLT             : // 0x4f
+    case EMR_PLGBLT             :     // 0x4f
       EMRPLGBLT PlgBlt;
       break;
 
-    case EMR_SETDIBITSTODEVICE  : // 0x50
+    case EMR_SETDIBITSTODEVICE  :     // 0x50
       EMRSETDIBITSTODEVICE SetDiBitsToDevice;
       break;
 
-    case EMR_STRETCHDIBITS      : // 0x51
+    case EMR_STRETCHDIBITS      :     // 0x51
       EMRSTRETCHDIBITS StretchDIBits;
       break;
 
-    case EMR_EXTTEXTOUTA        : // 0x53
+    case EMR_REALIZEPALETTE     :     // 0x52
+      EMRREALIZEPALETTE RealizePalette;
+      break;
+
+    case EMR_EXTTEXTOUTA        :     // 0x53
       EMREXTTEXTOUTA ExtTextOutA;
       break;
 
-    case EMR_CREATEMONOBRUSH    : // 0x5d
+    case EMR_EXTTEXTOUTW        :     // 0x54
+      EMREXTTEXTOUTW ExtTextOutW;
+      break;
+
+    case EMR_EXTTEXTOUTW        :     // 0x55
+      EMRPOLYBEZIER16 PolyBezier16;
+      break;
+
+    case EMR_POLYGON16          :     // 0x56
+      EMRPOLYGON16 Polygon16;
+      break;
+
+    case EMR_POLYLINE16         :     // 0x57
+      EMRPOLYLINE16 Polyline16;
+      break;
+
+    case EMR_CREATEMONOBRUSH    :     // 0x5d
       EMRCREATEMONOBRUSH CreateMonoBrush;
       break;
 
@@ -1879,6 +2413,10 @@ typedef struct {
       EMRCOLORCORRECTPALETTE ColorCorrectPalette;
       break;
 
+    case EMR_ALPHABLEND             : // 0x72
+      EMRALPHABLEND AlphaBlend;
+      break;
+
     case EMR_TRANSPARENTBLT         : // 0x74
       EMRTRANSPARENTBLT TransparentBlt;
       break;
@@ -1895,10 +2433,6 @@ typedef struct {
       EMRCREATECOLORSPACEW CreateColorSpaceW;
       break;
 
-    case EMR_ALPHABLEND             : // 0x72
-      EMRALPHABLEND AlphaBlend;
-      break;
-
     case EMR_COLORMATCHTOTARGETW    : // 0x79
       EMRCOLORMATCHTOTARGETW ColorMatchToTargetW;
       break;
@@ -1907,7 +2441,7 @@ typedef struct {
       EmfRecordType iType;
       DWORD nSize;
       if (nSize > 8) {
-        DWORD	dParm[((nSize-8)/4)];
+        DWORD dParm[((nSize-8)/4)];
       };
   }
 
@@ -1919,7 +2453,7 @@ LittleEndian();
 EMRHEADER EmfHeader;
 
 // Add optional description record.
-if (EmfHeader.nDescription && EmfHeader.offDescription){
+if (EmfHeader.nDescription && EmfHeader.offDescription) {
   FSeek(EmfHeader.offDescription);
   EMRDESCRIPTION EmfDescription;
 }
