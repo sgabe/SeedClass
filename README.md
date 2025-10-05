@@ -116,4 +116,4 @@ This repository provides a labeled dataset created to evaluate the proposed ML-b
 | `F7AFF247E121`        | 252      | 699.0e9   | GdiPlus.dll       | `bParseWin32Metafile`                      |
 | `FD0F262AA4D7`        | 854      | -         | Gdi32Full.dll     | `MRBDIB::vInit`                            |
 | `A390F3B1FEDF`        | 400      | 520.506   | Gdi32Full.dll     | `NamedEscape`                              |
-| `44168A76232A`        | 608      | 2df.af7   | dwrite.dll        | `GlyphDataElement<...>::GetExistingGlyphs` |
+| `44168A76232A`        | 608      | 6e7.9de   | dwrite.dll        | `GlyphDataElement<...>::GetExistingGlyphs` |
