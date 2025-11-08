@@ -80,7 +80,7 @@ def run_bugid(file, files, crash_dir, valid_dir, lock):
     logging.debug(f'BugId output:\n{stdout}')
 
     if 'A bug was detected' in stdout:
-        match = re.search(r"Id @ Location:\s+\S+\s+(\w+\.\w+) @ [^!]+!(\w+\.\w+)!(.+)", stdout)
+        match = re.search(r"Id @ Location:\s+\S+\s+(\w+\.?\w+) @ [^!]+!(\w+\.\w+)!(.+)", stdout)
         if match:
             bugid, library, function = match.groups()
             logging.info(f'File {os.path.basename(file)} with {size} bytes triggered bug {bugid} in {function} within {library}.')
