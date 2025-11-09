@@ -9,8 +9,8 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.2.0'
-__date__      = '2025/04/24'
+__version__   = '0.2.1'
+__date__      = '2025/11/09'
 __copyright__ = 'Copyright (c) 2025 Gabor Seljan'
 __license__   = 'MIT'
 
@@ -49,7 +49,7 @@ def calculate_hash(path):
 
 
 def is_valid_crash(filename):
-    return re.match(r'^id_\d{6}_[0-9A-Fa-f]{8}_.+$', filename) is not None
+    return re.match(r'^id_\d{6}_([0-9A-Fa-f]{8}_)?.+$', filename) is not None
 
 
 def process_folder(input_path, output_path, extension):
