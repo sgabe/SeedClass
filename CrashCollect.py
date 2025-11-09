@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.2.1'
+__version__   = '0.2.2'
 __date__      = '2025/11/09'
 __copyright__ = 'Copyright (c) 2025 Gabor Seljan'
 __license__   = 'MIT'
@@ -66,8 +66,9 @@ def process_folder(input_path, output_path, extension):
                     if os.path.isfile(source):
                         hash = calculate_hash(source)
                         destination = os.path.join(output_path, f'{hash}{extension}')
-                        shutil.copy2(source, destination)
-                        count += 1
+                        if not os.path.exists(destination):
+                            shutil.copy2(source, destination)
+                            count += 1
 
             bucket = os.path.join(crashes, 'bucket')
             if os.path.exists(bucket):
@@ -78,8 +79,9 @@ def process_folder(input_path, output_path, extension):
                         if os.path.isfile(source):
                             hash = calculate_hash(source)
                             destination = os.path.join(output_path, f'{hash}{extension}')
-                            shutil.copy2(source, destination)
-                            count += 1
+                            if not os.path.exists(destination):
+                                shutil.copy2(source, destination)
+                                count += 1
 
     return count
 
