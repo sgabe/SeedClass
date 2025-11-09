@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.2.2'
+__version__   = '0.3.0'
 __date__      = '2025/11/09'
 __copyright__ = 'Copyright (c) 2025 Gabor Seljan'
 __license__   = 'MIT'
@@ -52,7 +52,7 @@ def is_valid_crash(filename):
     return re.match(r'^id_\d{6}_([0-9A-Fa-f]{8}_)?.+$', filename) is not None
 
 
-def process_folder(input_path, output_path, extension):
+def process_folder(input_path, output_path, extension, do_queue):
     count = 0
 
     for root, dirs, files in os.walk(input_path):
@@ -83,6 +83,18 @@ def process_folder(input_path, output_path, extension):
                                 shutil.copy2(source, destination)
                                 count += 1
 
+        if do_queue and 'queue' in dirs:
+            queue = os.path.join(root, 'queue')
+            logging.info(f'Processing queue folder {queue}...')
+            for sample in os.listdir(queue):
+                source = os.path.join(queue, sample)
+                if os.path.isfile(source):
+                    hash = calculate_hash(source)
+                    destination = os.path.join(output_path, f'{hash}{extension}')
+                    if not os.path.exists(destination):
+                        shutil.copy2(source, destination)
+                        count += 1
+
     return count
 
 
@@ -99,6 +111,8 @@ def main():
                         help='output folder to copy unique crash samples')
     parser.add_argument('-e', '--extension', default='.emf',
                         help='file extension for crash samples (defaults to .emf)')
+    parser.add_argument('-q', '--queue', action='store_true',
+                        help='also process mutated files from the queue folder')
 
     args = parser.parse_args()
 
@@ -108,7 +122,7 @@ def main():
 
     os.makedirs(args.output, exist_ok=True)
 
-    copied_files = process_folder(args.input, args.output, args.extension)
+    copied_files = process_folder(args.input, args.output, args.extension, args.queue)
     logging.info(f'Copied {copied_files} in total.')
 
 
