@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.6.1'
+__version__   = '0.6.2'
 __date__      = '2025/11/29'
 __copyright__ = 'Copyright (c) 2025 Gabor Seljan'
 __license__   = 'MIT'
@@ -122,8 +122,11 @@ def process_file(filename, args):
         return result
 
     checksum = calculate_hash(src)
-    dst = os.path.join(args.output, filename if filename.lower() == f'{checksum}{args.extension}'.lower() else f'{checksum}{args.extension}')
-    logging.debug(f'Renaming {filename} to {os.path.basename(dst)}')
+    filename = f'{checksum}{args.extension}'
+    dst = os.path.join(args.output, filename)
+
+    if checksum.lower() not in src.lower():
+        logging.debug(f'Renaming {os.path.basename(src)} to {filename}')
 
     for attempt in range(MAX_RETRIES):
         if stop.is_set():
