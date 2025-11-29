@@ -9,8 +9,8 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.5.9'
-__date__      = '2025/04/02'
+__version__   = '0.6.0'
+__date__      = '2025/11/29'
 __copyright__ = 'Copyright (c) 2025 Gabor Seljan'
 __license__   = 'MIT'
 
@@ -75,6 +75,8 @@ def is_emf_valid_via_ui(file_path):
     app = None
     try:
         app = Application(backend='uia').start(f'mspaint "{file_path}"', wait_for_idle=False)
+        app.top_window()  # Verify top window
+
         dlg = app.window(title='Paint cannot read this file.', enabled_only=True)
 
         if dlg.exists() or dlg.is_visible():
