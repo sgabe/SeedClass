@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.6.0'
+__version__   = '0.6.1'
 __date__      = '2025/11/29'
 __copyright__ = 'Copyright (c) 2025 Gabor Seljan'
 __license__   = 'MIT'
@@ -191,6 +191,8 @@ def main():
         f for f in os.listdir(args.input)
         if f.lower().endswith(args.extension) and os.path.isfile(os.path.join(args.input, f))
     ]
+
+    logging.info(f'Found {len(filenames)} files in input directory {args.input}.')
 
     if not filenames:
         logging.warning(f'No files with extension {args.extension} found in {args.input}!')
