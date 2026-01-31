@@ -11,7 +11,7 @@ Example:
 __author__    = 'Gabor Seljan'
 __version__   = '0.6.2'
 __date__      = '2025/11/29'
-__copyright__ = 'Copyright (c) 2025 Gabor Seljan'
+__copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
 
 import os
