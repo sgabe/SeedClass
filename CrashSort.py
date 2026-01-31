@@ -9,14 +9,15 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.9.2'
-__date__      = '2025/04/24'
+__version__   = '0.10.0'
+__date__      = '2026/01/31'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
 
 import os
 import re
 import sys
+import time
 import shutil
 import signal
 import logging
@@ -39,11 +40,11 @@ logging.basicConfig(
 
 print('''
                  _____                _      _____            _
-                / ____|    v{}     | |    / ____|          | |
+                / ____|    v{}   | |    / ____|          | |
                 | |     _ __ __ _ ___| |__ | (___   ___  _ __| |_
                 | |    | '__/ _` / __| '_ \ \___ \ / _ \| '__| __|
                 | |____| | | (_| \__ \ | | |____) | (_) | |  | |_
-                \_____|_|  \__,_|___/_| |_|_____/ \___/|_|   \__|
+                \______|_|  \__,_|___/_| |_|_____/ \___/|_|   \__|
 
 '''.format(__version__))
 
@@ -54,7 +55,7 @@ def handle_exit_signal(signum, frame):
         stop.set()
 
 
-def run_bugid(file, files, crash_dir, valid_dir, lock):
+def run_bugid(file, files, crash_dir, valid_dir, hang_dir, lock, timeout):
     if stop.is_set():
         return
 
@@ -74,8 +75,40 @@ def run_bugid(file, files, crash_dir, valid_dir, lock):
 
     size = os.path.getsize(file)
 
-    proc = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace')
-    stdout = proc.stdout if proc.stdout else ""
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        encoding='utf-8',
+        errors='replace',
+        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
+    )
+
+    start_time = time.monotonic()
+
+    try:
+        stdout, stderr = proc.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        elapsed_time = time.monotonic() - start_time
+        logging.error(f'File {os.path.basename(file)} with {size} bytes timed out after {elapsed_time:.2f}s (limit {timeout}s).')
+
+        subprocess.run(
+            ['taskkill', '/PID', str(proc.pid), '/T', '/F'],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+
+        if proc.poll() is None:
+            proc.kill()
+
+        if not stop.is_set():
+            shutil.move(file, os.path.join(hang_dir, os.path.basename(file)))
+
+        return
+
+    elapsed_time = time.monotonic() - start_time
+    logging.debug(f'File {os.path.basename(file)} processed in {elapsed_time:.2f}s.')
 
     logging.debug(f'BugId output:\n{stdout}')
 
@@ -98,14 +131,14 @@ def run_bugid(file, files, crash_dir, valid_dir, lock):
         logging.warning(f'File {os.path.basename(file)} with {size} bytes did not trigger a bug.')
 
 
-def process_files(input_dir, all_dir, valid_dir, max_threads):
+def process_files(input_dir, all_dir, valid_dir, hang_dir, max_threads, timeout):
     file_count = len([f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))])
     logging.info(f'Found {file_count} files in input directory {input_dir}.')
 
     files = {}
     lock = threading.Lock()
 
-    def process_file(filename):
+    def process_file(filename, timeout):
         if stop.is_set():
             return
 
@@ -113,11 +146,11 @@ def process_files(input_dir, all_dir, valid_dir, max_threads):
         if not os.path.isfile(file):
             logging.debug(f'Skipping non-file {file}.')
             return
-        run_bugid(file, files, all_dir, valid_dir, lock)
+        run_bugid(file, files, all_dir, valid_dir, hang_dir, lock, timeout)
 
     try:
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
-            futures = [executor.submit(process_file, filename) for filename in os.listdir(input_dir)]
+            futures = [executor.submit(process_file, filename, timeout) for filename in os.listdir(input_dir)]
             for future in concurrent.futures.as_completed(futures):
                 if stop.is_set():
                     for future in futures:
@@ -153,6 +186,8 @@ def main():
                         help='output folder where other folders will be created')
     parser.add_argument('-t', '--threads', type=int, default=None,
                         help='maximum number of threads for processing')
+    parser.add_argument('--timeout', type=int, default=30,
+                        help='maximum execution time per sample in seconds (default: 30)')
 
     args = parser.parse_args()
 
@@ -163,10 +198,12 @@ def main():
     all_dir = os.path.join(args.output, 'all')
     unique_dir = os.path.join(args.output, 'unique')
     valid_dir = os.path.join(args.output, 'none')
+    hang_dir = os.path.join(args.output, 'hang')
 
     os.makedirs(all_dir, exist_ok=True)
     os.makedirs(unique_dir, exist_ok=True)
     os.makedirs(valid_dir, exist_ok=True)
+    os.makedirs(hang_dir, exist_ok=True)
 
     signal.signal(signal.SIGINT, handle_exit_signal)
 
@@ -175,7 +212,7 @@ def main():
 
     try:
         total_files = len([f for f in os.listdir(args.input) if os.path.isfile(os.path.join(args.input, f))])
-        unique_bugs = process_files(args.input, all_dir, valid_dir, max_threads)
+        unique_bugs = process_files(args.input, all_dir, valid_dir, hang_dir, max_threads, args.timeout)
 
         if unique_bugs and not stop.is_set():
             logging.info(f'Found {len(unique_bugs)} unique bugs across {total_files} files in total.')
