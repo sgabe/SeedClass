@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.5.2'
+__version__   = '0.5.3'
 __date__      = '2026/02/08'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
@@ -18,6 +18,7 @@ import os
 import re
 import sys
 import shutil
+import random
 import logging
 import argparse
 
@@ -53,7 +54,7 @@ def process_log(path, input_dir=None, output_dir=None, distribution_size=100):
     )
 
     try:
-        with open(path, 'r') as file:
+        with open(path, 'r', encoding='utf-8', errors='ignore') as file:
             for line in file:
                 match = pattern.search(line)
                 if match:
@@ -73,10 +74,32 @@ def process_log(path, input_dir=None, output_dir=None, distribution_size=100):
 
         for function, files in samples.items():
             total_count = len(files)
-            target_count = min(distribution_size, total_count)
-            copied_files = 0
 
-            for file in files[:target_count]:
+            if total_count > 10000:
+                target_count = min(300, distribution_size, total_count)
+            elif total_count > 1000:
+                target_count = min(200, distribution_size, total_count)
+            elif total_count > 100:
+                target_count = min(distribution_size, total_count)
+            else:
+                target_count = total_count
+
+            # Prefer smaller files
+            files_sorted = sorted(
+                files,
+                key=lambda f: os.path.getsize(os.path.join(input_dir, f))
+                if os.path.exists(os.path.join(input_dir, f)) else float('inf')
+            )
+
+            candidate_pool = files_sorted[:max(target_count * 2, target_count)]
+            selected_files = (
+                random.sample(candidate_pool, target_count)
+                if len(candidate_pool) > target_count
+                else candidate_pool
+            )
+
+            copied_files = 0
+            for file in selected_files:
                 src_path = os.path.join(input_dir, file)
                 dest_path = os.path.join(output_dir, file)
                 if os.path.exists(src_path):
