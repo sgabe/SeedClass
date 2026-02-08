@@ -9,8 +9,8 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.5.1'
-__date__      = '2025/04/25'
+__version__   = '0.5.2'
+__date__      = '2026/02/08'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
 
@@ -44,8 +44,8 @@ print('''
 
 
 def process_log(path, input_dir=None, output_dir=None, distribution_size=100):
-    samples = defaultdict(list)  # Maps Bug ID to list of files
-    bugs = {}  # Maps Bug ID to (Function name, Library name)
+    samples = defaultdict(list)  # Maps function to list of files
+    bugs = {}                    # Maps function to (Bug ID, Library name)
     optimized_counts = defaultdict(int)
 
     pattern = re.compile(
@@ -58,8 +58,8 @@ def process_log(path, input_dir=None, output_dir=None, distribution_size=100):
                 match = pattern.search(line)
                 if match:
                     sample, _, id, function, library = match.groups()
-                    samples[id].append(sample)
-                    bugs[id] = (function, library)
+                    samples[function].append(sample)
+                    bugs.setdefault(function, (id, library))
     except FileNotFoundError:
         logging.error(f'Log file {path} not found!')
         return
@@ -71,7 +71,7 @@ def process_log(path, input_dir=None, output_dir=None, distribution_size=100):
 
         os.makedirs(output_dir, exist_ok=True)
 
-        for id, files in samples.items():
+        for function, files in samples.items():
             total_count = len(files)
             target_count = min(distribution_size, total_count)
             copied_files = 0
@@ -81,28 +81,28 @@ def process_log(path, input_dir=None, output_dir=None, distribution_size=100):
                 dest_path = os.path.join(output_dir, file)
                 if os.path.exists(src_path):
                     shutil.copy(src_path, dest_path)
-                    optimized_counts[id] += 1
+                    optimized_counts[function] += 1
                     copied_files += 1
                     if copied_files >= target_count:
                         break
 
         logging.info('Statistics for optimized collection:')
-        for id, count in sorted(optimized_counts.items(), key=lambda x: x[1], reverse=True):
-            function, library = bugs[id]
+        for function, count in sorted(optimized_counts.items(), key=lambda x: x[1], reverse=True):
+            id, library = bugs[function]
             logging.info(f"{count:6} Bug ID: {id:12} Function: {function:40} Library: {library:20}")
     else:
         logging.info('Summary of bugs identified in the crash samples:')
         sorted_summary = sorted(
-            [(len(files), id) for id, files in samples.items()],
+            [(len(files), function) for function, files in samples.items()],
             reverse=True
         )
-        for count, id in sorted_summary:
-            function, library = bugs[id]
+        for count, function in sorted_summary:
+            id, library = bugs[function]
             logging.info(f'Count: {count:<6} ID: {id:<12} Function: {function:<40} Library: {library:<20}')
 
         logging.debug('List of crash samples for each bug:')
-        for id, files in samples.items():
-            function, library = bugs[id]
+        for function, files in samples.items():
+            id, library = bugs[function]
             logging.debug(f'Bug ID: {id:<12} Function: {function:<40} Library: {library:<20}')
             for file in files:
                 logging.debug(f"\t{file}")
