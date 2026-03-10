@@ -5,18 +5,19 @@
 SeedFilter is a Python script to group valid samples by file size and filter them based on their variability in a multi-threaded manner.
 
 Example:
-    python SeedFilter.py -i ./input_folder -o ./output_folder -v 30 -t 4
+    python SeedFilter.py -i ./input_folder -o ./output_folder -v 30 -t 4 --bucket 8
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.1.5'
-__date__      = '2025/04/25'
+__version__   = '0.2.1'
+__date__      = '2026/02/17'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
 
 import os
 import sys
 import shutil
+import random
 import logging
 import argparse
 
@@ -33,16 +34,23 @@ logging.basicConfig(
     ]
 )
 
+MAX_PER_GROUP   = 20  # cap selected files per size group
+PREFILTER_BYTES = 64  # cheap prefilter
+
 
 def calculate_variance(data1, data2):
     if len(data1) != len(data2):
-        return 100
+        return 100.0
     differences = sum(abs(b1 - b2) for b1, b2 in zip(data1, data2))
     max_diff = len(data1) * 255
-    return (differences / max_diff) * 100
+    return (differences / max_diff) * 100.0
 
 
-def group_files_by_size(input_dir):
+def quick_difference(data1, data2, n=PREFILTER_BYTES):
+    return sum(abs(a - b) for a, b in zip(data1[:n], data2[:n]))
+
+
+def group_files_by_size(input_dir, bucket_size):
     size_groups = defaultdict(list)
     total = 0
     for root, _, files in os.walk(input_dir):
@@ -50,7 +58,8 @@ def group_files_by_size(input_dir):
             path = os.path.join(root, file)
             try:
                 size = os.path.getsize(path)
-                size_groups[size].append(path)
+                bucket = size // bucket_size
+                size_groups[bucket].append(path)
                 total += 1
             except OSError:
                 logging.warning(f'Could not access file {path}.')
@@ -58,38 +67,53 @@ def group_files_by_size(input_dir):
     return size_groups, total
 
 
-def filter_files_with_variance(group, threshold=30):
+def filter_files_with_variance(group, threshold):
     filtered = []
 
-    if len(group) == 1:
-        return filtered
+    if len(group) < 2:
+        return group[:1]
 
-    for i, file1 in enumerate(group):
+    data_cache = {}
+    for file in group:
         try:
-            with open(file1, 'rb') as f1:
-                data1 = f1.read()
-            unique = True
-            for file2 in filtered:
-                with open(file2, 'rb') as sf:
-                    data2 = sf.read()
+            with open(file, 'rb') as f:
+                data_cache[file] = f.read()
+        except OSError:
+            logging.warning(f'Could not read file {file}.')
+
+    files = list(data_cache.keys())
+    random.shuffle(files)
+
+    for file1 in files:
+        data1 = data_cache[file1]
+        unique = True
+
+        for file2 in filtered:
+            data2 = data_cache[file2]
+
+            diff = quick_difference(data1, data2)
+            if diff < threshold * PREFILTER_BYTES:
                 variance = calculate_variance(data1, data2)
                 if variance < threshold:
                     unique = False
                     break
-            if unique:
-                filtered.append(file1)
-        except OSError:
-            logging.warning(f'Could not process file {file1}.')
+
+        if unique:
+            filtered.append(file1)
+
+        if len(filtered) >= MAX_PER_GROUP:
+            break
+
     return filtered
 
 
-def process_size_group(size, group, variance, output_dir):
-    logging.info(f'Processing group of size {size} bytes with {len(group)} files.')
-    group = filter_files_with_variance(group, threshold=variance)
+def process_size_group(bucket, group, variance, output_dir):
+    logging.info(f'Processing size bucket {bucket} ({len(group)} files)')
+    group = filter_files_with_variance(group, variance)
+
     for file in group:
         try:
             shutil.copy(file, output_dir)
-            logging.info(f'Copied file {file} to {output_dir}.')
         except OSError:
             logging.error(f'Failed to copy file {file} to {output_dir}.')
     return len(group)
@@ -110,8 +134,14 @@ def main():
                         help='variance threshold (defaults to 30)')
     parser.add_argument('-t', '--threads', type=int, default=4,
                         help='number of threads to use (defaults to 4)')
+    parser.add_argument('-b', '--bucket', type=int, default=30,
+                        help='file size bucket width in bytes (defaults to 30)')
 
     args = parser.parse_args()
+
+    if args.bucket <= 0:
+        logging.error('Bucket size must be a positive integer.')
+        sys.exit(1)
 
     if not os.path.isdir(args.input):
         logging.error(f'Input folder {args.input} does not exist or is not a directory!')
@@ -119,23 +149,23 @@ def main():
 
     os.makedirs(args.output, exist_ok=True)
 
-    logging.info('Starting to group files by size...')
-    size_groups, total_files = group_files_by_size(args.input)
-    logging.info(f"{len(size_groups)} size groups identified:")
-    for size, files in size_groups.items():
-        logging.info(f'Group of size {size} bytes contains {len(files)} files.')
+    logging.info('Grouping files by approximate size...')
+    size_groups, total_files = group_files_by_size(args.input, args.bucket)
 
-    total = 0
+    logging.info(f'{len(size_groups)} size buckets identified.')
+
+    total_selected = 0
     with ThreadPoolExecutor(max_workers=args.threads) as executor:
         futures = []
-        for size, files in size_groups.items():
-            logging.info(f'Submitting group of size {size} bytes for processing.')
-            futures.append(executor.submit(
-                process_size_group, size, files, args.variance, args.output))
-        for future in as_completed(futures):
-            total += future.result()
+        for bucket, files in size_groups.items():
+            futures.append(
+                executor.submit(process_size_group, bucket, files, args.variance, args.output)
+            )
 
-    logging.info(f'{total} files selected have been copied to {args.output}.')
+        for future in as_completed(futures):
+            total_selected += future.result()
+
+    logging.info(f'{total_selected} files selected and copied to {args.output}.')
 
 
 if __name__ == '__main__':
