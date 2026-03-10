@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <vector>
 #include <windows.h>
 #include <gdiplus.h>
 #include <shlwapi.h>

@@ -7,6 +7,16 @@
 
 using namespace Gdiplus;
 
+static int CALLBACK EmfEnumProc(
+    HDC dc,
+    HANDLETABLE* ht,
+    const ENHMETARECORD* rec,
+    int n,
+    LPARAM lp)
+{
+    return PlayEnhMetaFileRecord(dc, ht, rec, n);
+}
+
 extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
 {
     int argCount;
@@ -72,7 +82,22 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
         if (graphics && (Ok == graphics->GetLastStatus()))
         {
 #if _DEBUG
-            OutputDebugString(L"Graphics created");
+            OutputDebugString(L"Graphics created from image");
+#endif
+            graphics->DrawImage(image, 0, 0);
+        }
+
+        if (graphics)
+        {
+            delete graphics;
+            graphics = NULL;
+        }
+
+        graphics = Graphics::FromImage(metafile);
+        if (graphics && (Ok == graphics->GetLastStatus()))
+        {
+#if _DEBUG
+            OutputDebugString(L"Graphics created from metafile");
 #endif
             graphics->DrawImage(image, 0, 0);
         }
@@ -83,7 +108,51 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
 #if _DEBUG
         OutputDebugString(L"Metafile loaded");
 #endif
+        RECT rcZero = { 0, 0, 0, 0 };
+        RECT rcSmall = { 0, 0, 1, 1 };
+        RECT rcNormal = { 0, 0, 512, 512 };
         hEmf = metafile->GetHENHMETAFILE();
+
+#if _DEBUG
+        OutputDebugString(L"Metafile played");
+#endif
+        PlayEnhMetaFile(hDC, hEmf, &rcZero);
+        PlayEnhMetaFile(hDC, hEmf, &rcSmall);
+        PlayEnhMetaFile(hDC, hEmf, &rcNormal);
+
+#if _DEBUG
+        OutputDebugString(L"Metafile enumerated");
+#endif
+        EnumEnhMetaFile(hDC, hEmf, EmfEnumProc, NULL, &rcZero);
+        EnumEnhMetaFile(hDC, hEmf, EmfEnumProc, NULL, &rcSmall);
+        EnumEnhMetaFile(hDC, hEmf, EmfEnumProc, NULL, &rcNormal);
+
+        UINT sz = GetEnhMetaFileBits(hEmf, 0, NULL);
+        if (sz)
+        {
+#if _DEBUG
+            OutputDebugString(L"Metafile size retrieved");
+#endif
+            std::vector<BYTE> buf(sz);
+            if (GetEnhMetaFileBits(hEmf, sz, buf.data()))
+            {
+#if _DEBUG
+                OutputDebugString(L"Metafile bits extracted");
+#endif
+                HENHMETAFILE h2 = SetEnhMetaFileBits(sz, buf.data());
+                if (h2)
+                {
+#if _DEBUG
+                    OutputDebugString(L"Metafile reconstructed");
+#endif
+                    PlayEnhMetaFile(hDC, h2, &rcZero);
+                    PlayEnhMetaFile(hDC, h2, &rcSmall);
+                    PlayEnhMetaFile(hDC, h2, &rcNormal);
+                    DeleteEnhMetaFile(h2);
+                }
+            }
+        }
+
         for (size_t x = 1; x <= 8; x++)
         {
             for (size_t y = 0; y <= 4; y++)
@@ -94,6 +163,15 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
                 Gdiplus::Metafile::EmfToWmfBits(hEmf, 0, NULL, (INT)x, (INT)y);
             }
         }
+    }
+
+    if (graphics && metafile && metafile->GetLastStatus() == Ok)
+    {
+#if _DEBUG
+        OutputDebugString(L"Metafile drawn on image");
+#endif
+        graphics->DrawImage(metafile, 0, 0);
+        graphics->DrawImage(metafile, Rect(0, 0, 100, 100));
     }
 
     if (image) delete image;
