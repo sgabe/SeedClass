@@ -120,3 +120,16 @@ This repository provides a labeled dataset created to evaluate the proposed ML-b
 | `763A0E8C4880`        | 12771    | 23a.5ec   | GdiPlus.dll       | `BuiltLine::UpdateContentWithPathEllipsis` |
 | `AE76571CE282`        | 609      | 07f       | GdiPlus.dll       | `RasterizePath`                            |
 | `400A7E5433EE`        | 617      | 596.07f   | GdiPlus.dll       | `EpAliasedFiller::FillEdgesWinding`        |
+| `EF4C6D6A334D`        | 610      | 02a.273   | GdiPlus.dll       | `ScanOperation::AlphaMultiply_sRGB`        |
+| `DBD042AD80CA`        | 656      | d9b.21d   | GdiPlus.dll       | `ScanOperation::Blend_sRGB_sRGB_MMX`       |
+| `02072F1534E8`        | 608      | 7dd.2cd   | dwrite.dll        | `fsc_FillBitMap`                           |
+| `A17568FA8D62`        | 608      | be9.1bc   | GdiPlus.dll       | `GpPen::GetMaximumWidth`                   |
+| `3A8835E20EA1`        | 610      | 7fa.70b   | GdiPlus.dll       | `SpanVector<...>::Free`                    |
+| `F16B74E7CF5E`        | 234      | a05.56e   | GdiPlus.dll       | `EpScanGdiDci::NextBuffer`                 |
+| `D9A80A481AB5`        | 289      | 8c2.671   | Gdi32Full.dll     | `MF_GdiCommentBeginGroupEMF`               |
+| `0050349F2FEF`        | 291      | a20.9f5   | msvcrt.dll        | `fastzero_I`                               |
+| `01266FE4F837`        | 199      | 6cf.8c2   | Gdi32Full.dll     | `MRGDICOMMENT::vInitBeginGroupEMF`         |
+| `2F3C8D485B7A`        | 288      | d1b.d76   | GdiPlus.dll       | `ValidateBitmapInfo`                       |
+| `1BDFC7E83A3C`        | 220      | f61.dc1   | ucrtbase.dll      | `_wcsicmp`                                 |
+| `9024AD25E0B4`        | 612      | fab       | GdiPlus.dll       | `QuickSortIndex`                           |
+| `5A437085BC9F`        | 1012     | 56d.23c   | GdiPlus.dll       | `DpDriver::FillPath`                       |
