@@ -9,8 +9,8 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.5.0'
-__date__      = '2025/04/02'
+__version__   = '0.5.1'
+__date__      = '2026/04/09'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
 
