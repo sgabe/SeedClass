@@ -86,6 +86,8 @@ parser.add_argument('-R', '--regularization', dest='regularization', action='sto
 
 parser.add_argument('--seed', dest='seed', type=int, default=None,
                     help='set initial seed (default none)')
+parser.add_argument('--num-features', dest='num_features', type=int, default=256,
+                    help='set number of features (default 256)')
 parser.add_argument('--test-size', dest='test_size', type=float, default=0.2,
                     help='set test size (default 0.2)')
 parser.add_argument('--batch-size', dest='batch_size', type=int, default=32,
@@ -113,6 +115,7 @@ FEATURE_RANGE_MAX_SIMPLE = 0.646464646464
 FEATURE_RANGE_MAX_PRODUCT = (pow(64, 6)) / pow(10, 11) # 0.68719476736
 
 FEATURE_RANGE_MAX = FEATURE_RANGE_MAX_SIMPLE if ENCODING == 'simple' else FEATURE_RANGE_MAX_PRODUCT
+NUM_FEATURES      = args.num_features         # Default is 256
 TEST_SIZE         = args.test_size            # Default is 0.25
 BATCH_SIZE        = args.batch_size           # Default is 32
 LEARNING_RATE     = args.learning_rate        # Default is 0.001
@@ -166,8 +169,8 @@ def load_data(data, archive, label=LABEL_NEGATIVE):
             for chunk in chunks(encoded, 6)
         ]
 
-        # Pad the feature list to 256 elements.
-        while len(decimal) < 256:
+        # Pad the feature list to NUM_FEATURES elements.
+        while len(decimal) < NUM_FEATURES:
             decimal.append(0)
         return decimal
 
@@ -182,7 +185,7 @@ def load_data(data, archive, label=LABEL_NEGATIVE):
                     with zip.open(info.filename) as f:
                         features = process(f.read())
                         features[:0] = [label]
-                        if len(features) == 257: # Ignore too big files
+                        if len(features) == NUM_FEATURES+1: # Ignore too big files
                             good.append(len(features))
                             data.update({os.path.basename(info.filename): features})
                         else:
@@ -246,10 +249,10 @@ def main():
     X_test = pd.DataFrame(scaler.transform(X_test)).values
 
     model = Sequential()
-    model.add(Input(shape=(256,)))
-    model.add(Dense(256, activation='relu', kernel_regularizer=L2(0.00001) if REGULARIZATION else None))
+    model.add(Input(shape=(NUM_FEATURES,)))
+    model.add(Dense(NUM_FEATURES, activation='relu', kernel_regularizer=L2(0.00001) if REGULARIZATION else None))
     model.add(Dropout(0.5))
-    model.add(Dense(256, activation='relu', kernel_regularizer=L2(0.00001) if REGULARIZATION else None))
+    model.add(Dense(NUM_FEATURES, activation='relu', kernel_regularizer=L2(0.00001) if REGULARIZATION else None))
     model.add(Dropout(0.5))
     model.add(Dense(1, activation='sigmoid'))
 

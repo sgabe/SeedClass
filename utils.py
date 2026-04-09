@@ -42,8 +42,8 @@ def load_data(data, archive, label=config.LABEL_NEGATIVE):
             for chunk in chunks(encoded, 6)
         ]
 
-        # Pad the feature list to 256 elements.
-        while len(decimal) < 256:
+        # Pad the feature list to config.NUM_FEATURES elements.
+        while len(decimal) < config.NUM_FEATURES:
             decimal.append(0)
         return decimal
 

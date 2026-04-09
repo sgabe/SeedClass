@@ -17,6 +17,7 @@ DATASET_BALANCED  = False
 DATASET           = 'balanced' if DATASET_BALANCED else 'imbalanced'
 
 LOG_DIR           = os.path.join(os.getcwd(), 'logs/fit/' + datetime.now().strftime('%Y%m%d-%H%M%S'))
+NUM_FEATURES      = 256
 TEST_SIZE         = 0.25                      # Default is 0.25
 BATCH_SIZE        = 32                        # Default is 32
 LEARNING_RATE     = 0.001                     # Default is 0.001
