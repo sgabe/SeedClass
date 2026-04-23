@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.6.3'
+__version__   = '0.6.4'
 __date__      = '2026/04/23'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
@@ -108,7 +108,8 @@ def process_file(filename, args):
     result['processed'] = 1
     src = os.path.join(args.input, filename)
 
-    if not is_emf_valid_via_ui(src):
+    is_valid = is_emf_valid_via_ui(src)
+    if not is_valid:
         if stop.is_set():
             result['skipped'] = 1
             return result
@@ -122,7 +123,8 @@ def process_file(filename, args):
 
     checksum = calculate_hash(src)
     filename = f'{checksum}{args.extension}'
-    dst = os.path.join(args.output, filename)
+    subdir = 'valid' if is_valid else 'invalid'
+    dst = os.path.join(args.output, subdir, filename)
 
     if checksum.lower() not in src.lower():
         logging.debug(f'Renaming {os.path.basename(src)} to {filename}')
@@ -188,6 +190,8 @@ def main():
         sys.exit(1)
 
     os.makedirs(args.output, exist_ok=True)
+    os.makedirs(os.path.join(args.output, 'valid'), exist_ok=True)
+    os.makedirs(os.path.join(args.output, 'invalid'), exist_ok=True)
 
     timings.Timings.window_find_timeout = 10
 
