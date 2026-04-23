@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.6.4'
+__version__   = '0.6.5'
 __date__      = '2026/04/23'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
@@ -109,13 +109,10 @@ def process_file(filename, args):
     src = os.path.join(args.input, filename)
 
     is_valid = is_emf_valid_via_ui(src)
-    if not is_valid:
-        if stop.is_set():
-            result['skipped'] = 1
-            return result
+    if is_valid:
+        logging.info(f'{filename} is VALID.')
+    else:
         logging.warning(f'{filename} is NOT valid!')
-        result['invalid'] = 1
-        return result  # If invalid, stop processing immediately
 
     if stop.is_set():  # Ensure we do not continue after an interruption
         result['skipped'] = 1
@@ -138,12 +135,11 @@ def process_file(filename, args):
                 time.sleep(RETRY_DELAY)
                 continue
             shutil.move(src, dst)
-            if stop.is_set():
-                result['skipped'] = 1
-                return result
             result['moved'] = 1
-            result['valid'] = 1
-            logging.info(f'{filename} is VALID.')
+            if is_valid:
+                result['valid'] = 1
+            else:
+                result['invalid'] = 1
             break
         except Exception as e:
             if attempt < MAX_RETRIES - 1:
