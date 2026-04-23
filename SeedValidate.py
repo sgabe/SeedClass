@@ -9,8 +9,8 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.6.2'
-__date__      = '2025/11/29'
+__version__   = '0.6.3'
+__date__      = '2026/04/23'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
 
@@ -71,7 +71,6 @@ def calculate_hash(path):
 
 
 def is_emf_valid_via_ui(file_path):
-    timings.Timings.window_find_timeout = 10
     app = None
     try:
         app = Application(backend='uia').start(f'mspaint "{file_path}"', wait_for_idle=False)
@@ -189,6 +188,8 @@ def main():
         sys.exit(1)
 
     os.makedirs(args.output, exist_ok=True)
+
+    timings.Timings.window_find_timeout = 10
 
     filenames = [
         f for f in os.listdir(args.input)
