@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.7.1'
+__version__   = '0.7.2'
 __date__      = '2026/05/01'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
@@ -29,6 +29,7 @@ try:
     from pywinauto import timings
     from pywinauto.application import Application
     from pywinauto.findwindows import ElementNotFoundError
+    from pywinauto.findwindows import ElementAmbiguousError
 except ImportError as e:
     logging.error(f'Missing dependency: {e}')
     sys.exit(1)
@@ -75,22 +76,30 @@ def is_emf_valid_via_ui(file_path):
     app = None
     with semaphore:
         try:
-            app = Application(backend='uia').start(f'mspaint "{file_path}"', wait_for_idle=False)
-            app.top_window()  # Verify top window
-
+            app = Application(backend='uia')
+            app.start(f'mspaint "{file_path}"', wait_for_idle=True)
             dlg = app.window(title='Paint cannot read this file.', enabled_only=True)
-
-            if dlg.exists() or dlg.is_visible():
-                return False  # File is explicitly invalid
-        except ElementNotFoundError:
-            return True
+            try:
+                is_visible = dlg.is_visible()
+            except ElementNotFoundError:
+                return True
+            if is_visible:
+                try:
+                    dlg.child_window(auto_id='PrimaryButton', control_type='Button').invoke()
+                except Exception as e:
+                    logging.debug(f'Could not dismiss error dialog for {file_path}: {e}')
+                return False
+        except ElementAmbiguousError as e:
+            logging.warning(f'Ambiguous dialog match for {file_path}: {e}')
+            return None
         except Exception as e:
             logging.error(f'Failed to start Paint for {file_path}: {e}')
-            return False
+            return None
         finally:
             if app is not None:
                 try:
                     app.kill()
+                    app.wait_for_process_exit(timeout=5)
                 except Exception as e:
                     logging.debug(f'Exception during app.kill() for {file_path}: {e}')
         return False
