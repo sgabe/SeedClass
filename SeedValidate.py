@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.6.6'
+__version__   = '0.6.7'
 __date__      = '2026/05/01'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
@@ -34,6 +34,7 @@ except ImportError as e:
     sys.exit(1)
 
 stop = threading.Event()
+semaphore = threading.Semaphore(8)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -72,26 +73,27 @@ def calculate_hash(path):
 
 def is_emf_valid_via_ui(file_path):
     app = None
-    try:
-        app = Application(backend='uia').start(f'mspaint "{file_path}"', wait_for_idle=False)
-        app.top_window()  # Verify top window
+    with semaphore:
+        try:
+            app = Application(backend='uia').start(f'mspaint "{file_path}"', wait_for_idle=False)
+            app.top_window()  # Verify top window
 
-        dlg = app.window(title='Paint cannot read this file.', enabled_only=True)
+            dlg = app.window(title='Paint cannot read this file.', enabled_only=True)
 
-        if dlg.exists() or dlg.is_visible():
-            return False  # File is explicitly invalid
-    except ElementNotFoundError:
-        return True
-    except Exception as e:
-        logging.error(f'Failed to start Paint for {file_path}: {e}')
+            if dlg.exists() or dlg.is_visible():
+                return False  # File is explicitly invalid
+        except ElementNotFoundError:
+            return True
+        except Exception as e:
+            logging.error(f'Failed to start Paint for {file_path}: {e}')
+            return False
+        finally:
+            if app is not None:
+                try:
+                    app.kill()
+                except Exception as e:
+                    logging.debug(f'Exception during app.kill() for {file_path}: {e}')
         return False
-    finally:
-        if app is not None:
-            try:
-                app.kill()
-            except Exception as e:
-                logging.debug(f'Exception during app.kill() for {file_path}: {e}')
-    return False
 
 
 def is_file_accessible(file_path):
