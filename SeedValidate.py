@@ -9,8 +9,8 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.6.5'
-__date__      = '2026/04/23'
+__version__   = '0.6.6'
+__date__      = '2026/05/01'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
 
@@ -54,8 +54,8 @@ print('''
          |_____/ \\___|\\___|\\__,_|   \\/ \\__,_|_|_|\\__,_|\\__,_|\\__\\___|
 '''.format(__version__))
 
-MAX_RETRIES = 3  # Number of retries for file operations
-RETRY_DELAY = 2  # Delay (in seconds) between retries
+MAX_RETRIES = 5  # Number of retries for file operations
+RETRY_DELAY = 5  # Delay (in seconds) between retries
 
 
 def handle_exit_signal(signum, frame):
