@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.7.0'
+__version__   = '0.7.1'
 __date__      = '2026/05/01'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
@@ -156,7 +156,7 @@ def process_file(filename, args):
             if attempt < MAX_RETRIES - 1:
                 time.sleep(RETRY_DELAY)
             else:
-                logging.error(f'Failed to process {filename} after {MAX_RETRIES} attempts: {e}')
+                logging.error(f'Failed to process {os.path.basename(src)} after {MAX_RETRIES} attempts: {e}')
                 result['skipped'] = 1
 
     return result
