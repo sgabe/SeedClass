@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.6.8'
+__version__   = '0.6.9'
 __date__      = '2026/05/01'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
@@ -219,9 +219,14 @@ def main():
 
     try:
         for future in concurrent.futures.as_completed(futures):
-            if stop.is_set():
-                break
-            result = future.result()
+            filename = futures[future]
+
+            try:
+                result = future.result()
+            except Exception as e:
+                logging.error(f'Unhandled worker failure for {filename}: {e}')
+                result = {'processed': 1, 'valid': 0, 'invalid': 0, 'moved': 0, 'skipped': 1}
+
             for key in total:
                 total[key] += result.get(key, 0)
     except KeyboardInterrupt:
