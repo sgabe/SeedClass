@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.6.9'
+__version__   = '0.7.0'
 __date__      = '2026/05/01'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
@@ -110,11 +110,16 @@ def process_file(filename, args):
     result['processed'] = 1
     src = os.path.join(args.input, filename)
 
-    is_valid = is_emf_valid_via_ui(src)
-    if is_valid:
+    verdict = is_emf_valid_via_ui(src)
+    if verdict is True:
         logging.info(f'{filename} is VALID.')
-    else:
+        subdir = 'valid'
+    elif verdict is False:
         logging.warning(f'{filename} is NOT valid!')
+        subdir = 'invalid'
+    else:
+        logging.error(f'{filename} is SKIPPED.')
+        subdir = 'skipped'
 
     if stop.is_set():  # Ensure we do not continue after an interruption
         result['skipped'] = 1
@@ -133,7 +138,6 @@ def process_file(filename, args):
 
             checksum = calculate_hash(src)
             filename = f'{checksum}{args.extension}'
-            subdir = 'valid' if is_valid else 'invalid'
             dst = os.path.join(args.output, subdir, filename)
 
             if checksum.lower() not in src.lower():
@@ -141,10 +145,12 @@ def process_file(filename, args):
 
             shutil.move(src, dst)
             result['moved'] = 1
-            if is_valid:
+            if verdict is True:
                 result['valid'] = 1
-            else:
+            elif verdict is False:
                 result['invalid'] = 1
+            else:
+                result['skipped'] = 1
             break
         except Exception as e:
             if attempt < MAX_RETRIES - 1:
@@ -193,6 +199,7 @@ def main():
     os.makedirs(args.output, exist_ok=True)
     os.makedirs(os.path.join(args.output, 'valid'), exist_ok=True)
     os.makedirs(os.path.join(args.output, 'invalid'), exist_ok=True)
+    os.makedirs(os.path.join(args.output, 'skipped'), exist_ok=True)
 
     timings.Timings.window_find_timeout = 10
 
@@ -235,7 +242,7 @@ def main():
         executor.shutdown(wait=True)
 
         logging.info(f"Processed: {total['processed']}, Valid: {total['valid']}, "
-                     f"Invalid: {total['invalid']}, Moved: {total['moved']}, Skipped: {total['skipped']}")
+                     f"Invalid: {total['invalid']}, Moved: {total['moved']}, Unresolved: {total['skipped']}")
 
         sys.exit(1 if stop.is_set() else 0)
 
