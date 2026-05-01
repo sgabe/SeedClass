@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.6.7'
+__version__   = '0.6.8'
 __date__      = '2026/05/01'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
@@ -120,22 +120,25 @@ def process_file(filename, args):
         result['skipped'] = 1
         return result
 
-    checksum = calculate_hash(src)
-    filename = f'{checksum}{args.extension}'
-    subdir = 'valid' if is_valid else 'invalid'
-    dst = os.path.join(args.output, subdir, filename)
-
-    if checksum.lower() not in src.lower():
-        logging.debug(f'Renaming {os.path.basename(src)} to {filename}')
-
     for attempt in range(MAX_RETRIES):
         if stop.is_set():
             result['skipped'] = 1
             return result
         try:
             if not is_file_accessible(src):
-                time.sleep(RETRY_DELAY)
-                continue
+                if attempt < MAX_RETRIES - 1:
+                    time.sleep(RETRY_DELAY)
+                    continue
+                raise OSError(f'File is not accessible: {src}')
+
+            checksum = calculate_hash(src)
+            filename = f'{checksum}{args.extension}'
+            subdir = 'valid' if is_valid else 'invalid'
+            dst = os.path.join(args.output, subdir, filename)
+
+            if checksum.lower() not in src.lower():
+                logging.debug(f'Renaming {os.path.basename(src)} to {filename}')
+
             shutil.move(src, dst)
             result['moved'] = 1
             if is_valid:
