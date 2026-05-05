@@ -133,3 +133,4 @@ This repository provides a labeled dataset created to evaluate the proposed ML-b
 | `1BDFC7E83A3C`        | 220      | f61.dc1   | ucrtbase.dll      | `_wcsicmp`                                 |
 | `9024AD25E0B4`        | 612      | fab       | GdiPlus.dll       | `QuickSortIndex`                           |
 | `5A437085BC9F`        | 1012     | 56d.23c   | GdiPlus.dll       | `DpDriver::FillPath`                       |
+| `3AD757AE457F`        | 1012     | 4e8.107   | GdiPlus.dll       | `DriverMeta::GetBrush`                     |
