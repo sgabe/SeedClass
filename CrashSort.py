@@ -9,8 +9,8 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.10.0'
-__date__      = '2026/01/31'
+__version__   = '0.11.0'
+__date__      = '2026/05/05'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
 
@@ -27,6 +27,9 @@ import threading
 import concurrent.futures
 
 stop = threading.Event()
+
+MAX_ATTEMPTS  = 3  # Number of BugID attempts per sample
+ATTEMPT_DELAY = 3  # Delay (in seconds) between attempts
 
 logging.basicConfig(
     level=logging.INFO,
@@ -75,60 +78,69 @@ def run_bugid(file, files, crash_dir, valid_dir, hang_dir, lock, timeout):
 
     size = os.path.getsize(file)
 
-    proc = subprocess.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        encoding='utf-8',
-        errors='replace',
-        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
-    )
+    for attempt in range(MAX_ATTEMPTS):
+        if stop.is_set():
+            return
 
-    start_time = time.monotonic()
-
-    try:
-        stdout, stderr = proc.communicate(timeout=timeout)
-    except subprocess.TimeoutExpired:
-        elapsed_time = time.monotonic() - start_time
-        logging.error(f'File {os.path.basename(file)} with {size} bytes timed out after {elapsed_time:.2f}s (limit {timeout}s).')
-
-        subprocess.run(
-            ['taskkill', '/PID', str(proc.pid), '/T', '/F'],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
+        proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
         )
 
-        if proc.poll() is None:
-            proc.kill()
+        start_time = time.monotonic()
 
-        if not stop.is_set():
-            shutil.move(file, os.path.join(hang_dir, os.path.basename(file)))
+        try:
+            stdout, stderr = proc.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            elapsed_time = time.monotonic() - start_time
+            logging.error(f'File {os.path.basename(file)} with {size} bytes timed out after {elapsed_time:.2f}s (limit {timeout}s).')
 
-        return
+            subprocess.run(
+                ['taskkill', '/PID', str(proc.pid), '/T', '/F'],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
 
-    elapsed_time = time.monotonic() - start_time
-    logging.debug(f'File {os.path.basename(file)} processed in {elapsed_time:.2f}s.')
+            if proc.poll() is None:
+                proc.kill()
 
-    logging.debug(f'BugId output:\n{stdout}')
+            if not stop.is_set():
+                shutil.move(file, os.path.join(hang_dir, os.path.basename(file)))
 
-    if 'A bug was detected' in stdout:
-        match = re.search(r"Id @ Location:\s+\S+\s+(\w+\.?\w+) @ [^!]+!(\w+\.\w+)!(.+)", stdout)
-        if match:
-            bugid, library, function = match.groups()
-            logging.info(f'File {os.path.basename(file)} with {size} bytes triggered bug {bugid} in {function} within {library}.')
+            return
 
-            crashes = os.path.join(crash_dir, os.path.basename(file))
-            shutil.move(file, crashes)
+        elapsed_time = time.monotonic() - start_time
+        logging.debug(f'File {os.path.basename(file)} processed in {elapsed_time:.2f}s.')
 
-            with lock:
-                if bugid not in files or size < files[bugid][1]:
-                    files[bugid] = (crashes, size, function, library)
-        else:
-            logging.error(f'File {os.path.basename(file)} with {size} bytes triggered a bug but failed to extract identifier information!')
-    elif not stop.is_set():
+        logging.debug(f'BugId output:\n{stdout}')
+
+        if 'A bug was detected' in stdout:
+            match = re.search(r"Id @ Location:\s+\S+\s+(\w+\.?\w+) @ [^!]+!(\w+\.\w+)!(.+)", stdout)
+            if match:
+                bugid, library, function = match.groups()
+                logging.info(f'File {os.path.basename(file)} with {size} bytes triggered bug {bugid} in {function} within {library}.')
+
+                crashes = os.path.join(crash_dir, os.path.basename(file))
+                shutil.move(file, crashes)
+
+                with lock:
+                    if bugid not in files or size < files[bugid][1]:
+                        files[bugid] = (crashes, size, function, library)
+            else:
+                logging.error(f'File {os.path.basename(file)} with {size} bytes triggered a bug but failed to extract identifier information!')
+            return
+        elif attempt < MAX_ATTEMPTS - 1 and not stop.is_set():
+            if stop.wait(ATTEMPT_DELAY):
+                return
+
+    if not stop.is_set():
         shutil.move(file, os.path.join(valid_dir, os.path.basename(file)))
-        logging.warning(f'File {os.path.basename(file)} with {size} bytes did not trigger a bug.')
+        logging.warning(f'File {os.path.basename(file)} with {size} bytes did not trigger a bug after {MAX_ATTEMPTS} attempts.')
 
 
 def process_files(input_dir, all_dir, valid_dir, hang_dir, max_threads, timeout):
