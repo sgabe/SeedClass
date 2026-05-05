@@ -9,18 +9,21 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.5.1'
-__date__      = '2026/04/09'
+__version__   = '0.5.2'
+__date__      = '2026/05/05'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
 
 import io
 import os
 import sys
+import onnx
 import heapq
 import logging
+import tf2onnx
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 
 from shutil import copyfileobj
 from zipfile import ZipFile
@@ -101,6 +104,8 @@ parser.add_argument('--epochs', dest='epochs', type=int, default=10,
 parser.add_argument('--threshold', dest='threshold', type=float, default=0.5,
                     help='set threshold (default 0.5)')
 
+parser.add_argument('--save', dest='save', action='store_true',
+                    help='save model and scaler to file')
 parser.add_argument('--verbose', dest='verbose', action='store_true',
                     help='run in verbose mode')
 
@@ -122,6 +127,7 @@ LEARNING_RATE     = args.learning_rate        # Default is 0.001
 SEED              = args.seed                 # Default is None
 N_SPLITS          = args.nsplits              # Default is 4
 EPOCHS            = args.epochs               # Default is 10
+SAVE              = args.save                 # Default is 0
 VERBOSE           = args.verbose              # Default is 0
 
 # Increase for lower FP and higher precision yielding less files.
@@ -248,6 +254,18 @@ def main():
     X_train = pd.DataFrame(scaler.fit_transform(X_train)).values
     X_test = pd.DataFrame(scaler.transform(X_test)).values
 
+    if SAVE:
+        scale = scaler.scale_.astype(np.float64)
+        min_  = scaler.min_.astype(np.float64)
+
+        assert scale.shape == min_.shape
+        assert scale.ndim == 1
+
+        with open("scaler.bin", "wb") as f:
+            np.array([len(scale)], dtype=np.int32).tofile(f)
+            scale.tofile(f)
+            min_.tofile(f)
+
     model = Sequential()
     model.add(Input(shape=(NUM_FEATURES,)))
     model.add(Dense(NUM_FEATURES, activation='relu', kernel_regularizer=L2(0.00001) if REGULARIZATION else None))
@@ -302,6 +320,17 @@ def main():
 
     scores = model.evaluate(X_test, y_test, verbose=VERBOSE)
     logging.info(f'Loss: {scores[0] * 100:.2f}% - Recall: {scores[2] * 100:.2f}% - Precision: {scores[3] * 100:.2f}% - PRC: {scores[9] * 100:.2f}%')
+
+    if SAVE:
+        spec = [tf.TensorSpec([None, NUM_FEATURES], tf.float32, name="input")]
+
+        @tf.function(input_signature=spec)
+        def model_fn(x):
+            return model(x, training=False)
+
+        onnx_model, _ = tf2onnx.convert.from_function(model_fn, input_signature=spec, opset=18)
+        onnx.checker.check_model(onnx_model)
+        onnx.save(onnx_model, "model.onnx")
 
     dd = {}
     if args.unknown:
