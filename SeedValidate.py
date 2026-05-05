@@ -9,8 +9,8 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.7.2'
-__date__      = '2026/05/01'
+__version__   = '0.7.3'
+__date__      = '2026/05/05'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
 
@@ -56,8 +56,8 @@ print('''
          |_____/ \\___|\\___|\\__,_|   \\/ \\__,_|_|_|\\__,_|\\__,_|\\__\\___|
 '''.format(__version__))
 
-MAX_RETRIES = 5  # Number of retries for file operations
-RETRY_DELAY = 5  # Delay (in seconds) between retries
+MAX_ATTEMPTS  = 5  # Number of attempts for file operations
+ATTEMPT_DELAY = 5  # Delay (in seconds) between attempts
 
 
 def handle_exit_signal(signum, frame):
@@ -134,14 +134,14 @@ def process_file(filename, args):
         result['skipped'] = 1
         return result
 
-    for attempt in range(MAX_RETRIES):
+    for attempt in range(MAX_ATTEMPTS):
         if stop.is_set():
             result['skipped'] = 1
             return result
         try:
             if not is_file_accessible(src):
-                if attempt < MAX_RETRIES - 1:
-                    time.sleep(RETRY_DELAY)
+                if attempt < MAX_ATTEMPTS - 1:
+                    time.sleep(ATTEMPT_DELAY)
                     continue
                 raise OSError(f'File is not accessible: {src}')
 
@@ -162,10 +162,10 @@ def process_file(filename, args):
                 result['skipped'] = 1
             break
         except Exception as e:
-            if attempt < MAX_RETRIES - 1:
-                time.sleep(RETRY_DELAY)
+            if attempt < MAX_ATTEMPTS - 1:
+                time.sleep(ATTEMPT_DELAY)
             else:
-                logging.error(f'Failed to process {os.path.basename(src)} after {MAX_RETRIES} attempts: {e}')
+                logging.error(f'Failed to process {os.path.basename(src)} after {MAX_ATTEMPTS} attempts: {e}')
                 result['skipped'] = 1
 
     return result
