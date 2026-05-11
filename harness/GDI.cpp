@@ -13,6 +13,13 @@ using namespace Gdiplus;
 #define LOG(msg) do {} while (0)
 #endif
 
+static UINT GetMaxDerivedEmfBits()
+{
+    if (MAX_SAMPLE_SIZE > (UINT_MAX / 4))
+        return UINT_MAX;
+    return MAX_SAMPLE_SIZE * 4;
+}
+
 static int CALLBACK EmfEnumProc(
     HDC dc,
     HANDLETABLE* ht,
@@ -118,7 +125,7 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
         EnumEnhMetaFile(hDC, hEmf, EmfEnumProc, NULL, &rcNormal);
 
         UINT sz = GetEnhMetaFileBits(hEmf, 0, NULL);
-        if (sz)
+        if (sz && sz <= GetMaxDerivedEmfBits())
         {
             LOG(L"Metafile size retrieved");
             std::vector<BYTE> buf(sz);
