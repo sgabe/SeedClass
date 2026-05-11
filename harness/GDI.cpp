@@ -7,6 +7,12 @@
 
 using namespace Gdiplus;
 
+#if _DEBUG
+#define LOG(msg) do { OutputDebugStringW(msg); } while (0)
+#else
+#define LOG(msg) do {} while (0)
+#endif
+
 static int CALLBACK EmfEnumProc(
     HDC dc,
     HANDLETABLE* ht,
@@ -43,9 +49,7 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
     {
         if (shm_data == NULL)
         {
-#if _DEBUG
-            OutputDebugString(L"Failed to retrieve image data from shared memory");
-#endif
+            LOG(L"Failed to retrieve image data from shared memory");
             return 1;
         }
 
@@ -54,9 +58,7 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
         sample_bytes = (char*)malloc(sample_size);
         if (sample_bytes == NULL)
         {
-#if _DEBUG
-            OutputDebugString(L"Insufficient memory available");
-#endif
+            LOG(L"Insufficient memory available");
             return 1;
         }
         memcpy(sample_bytes, shm_data + sizeof(uint32_t), sample_size);
@@ -67,23 +69,17 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
 
     if (image && (Ok == image->GetLastStatus()))
     {
-#if _DEBUG
-        OutputDebugString(L"Image loaded");
-#endif
+        LOG(L"Image loaded");
         thumbnail = image->GetThumbnailImage(100, 100, NULL, NULL);
         if (thumbnail && (Ok == thumbnail->GetLastStatus()))
         {
-#if _DEBUG
-            OutputDebugString(L"Thumbnail created");
-#endif
+            LOG(L"Thumbnail created");
         }
 
         graphics = Graphics::FromImage(image);
         if (graphics && (Ok == graphics->GetLastStatus()))
         {
-#if _DEBUG
-            OutputDebugString(L"Graphics created from image");
-#endif
+            LOG(L"Graphics created from image");
             graphics->DrawImage(image, 0, 0);
         }
 
@@ -96,33 +92,27 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
         graphics = Graphics::FromImage(metafile);
         if (graphics && (Ok == graphics->GetLastStatus()))
         {
-#if _DEBUG
-            OutputDebugString(L"Graphics created from metafile");
-#endif
+            LOG(L"Graphics created from metafile");
             graphics->DrawImage(image, 0, 0);
         }
     }
 
     if (metafile)
     {
-#if _DEBUG
-        OutputDebugString(L"Metafile loaded");
-#endif
+        LOG(L"Metafile loaded");
         RECT rcZero = { 0, 0, 0, 0 };
         RECT rcSmall = { 0, 0, 1, 1 };
         RECT rcNormal = { 0, 0, 512, 512 };
         hEmf = metafile->GetHENHMETAFILE();
 
-#if _DEBUG
-        OutputDebugString(L"Metafile played");
-#endif
+        LOG(L"Metafile played");
+
         PlayEnhMetaFile(hDC, hEmf, &rcZero);
         PlayEnhMetaFile(hDC, hEmf, &rcSmall);
         PlayEnhMetaFile(hDC, hEmf, &rcNormal);
 
-#if _DEBUG
-        OutputDebugString(L"Metafile enumerated");
-#endif
+        LOG(L"Metafile enumerated");
+
         EnumEnhMetaFile(hDC, hEmf, EmfEnumProc, NULL, &rcZero);
         EnumEnhMetaFile(hDC, hEmf, EmfEnumProc, NULL, &rcSmall);
         EnumEnhMetaFile(hDC, hEmf, EmfEnumProc, NULL, &rcNormal);
@@ -130,21 +120,15 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
         UINT sz = GetEnhMetaFileBits(hEmf, 0, NULL);
         if (sz)
         {
-#if _DEBUG
-            OutputDebugString(L"Metafile size retrieved");
-#endif
+            LOG(L"Metafile size retrieved");
             std::vector<BYTE> buf(sz);
             if (GetEnhMetaFileBits(hEmf, sz, buf.data()))
             {
-#if _DEBUG
-                OutputDebugString(L"Metafile bits extracted");
-#endif
+                LOG(L"Metafile bits extracted");
                 HENHMETAFILE h2 = SetEnhMetaFileBits(sz, buf.data());
                 if (h2)
                 {
-#if _DEBUG
-                    OutputDebugString(L"Metafile reconstructed");
-#endif
+                    LOG(L"Metafile reconstructed");
                     PlayEnhMetaFile(hDC, h2, &rcZero);
                     PlayEnhMetaFile(hDC, h2, &rcSmall);
                     PlayEnhMetaFile(hDC, h2, &rcNormal);
@@ -157,9 +141,7 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
         {
             for (size_t y = 0; y <= 4; y++)
             {
-#if _DEBUG
-                OutputDebugString(L"Metafile converted");
-#endif
+                LOG(L"Metafile converted");
                 Gdiplus::Metafile::EmfToWmfBits(hEmf, 0, NULL, (INT)x, (INT)y);
             }
         }
@@ -167,9 +149,7 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
 
     if (graphics && metafile && metafile->GetLastStatus() == Ok)
     {
-#if _DEBUG
-        OutputDebugString(L"Metafile drawn on image");
-#endif
+        LOG(L"Metafile drawn on image");
         graphics->DrawImage(metafile, 0, 0);
         graphics->DrawImage(metafile, Rect(0, 0, 100, 100));
     }
@@ -200,31 +180,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     szArgList = CommandLineToArgvW(GetCommandLine(), &argCount);
     if (szArgList == NULL || argCount < 3)
     {
-#if _DEBUG
-        OutputDebugString(L"Not enough parameters");
-#endif
+        LOG(L"Not enough parameters");
         return 1;
     }
 
     if (!wcscmp(szArgList[1], L"-s"))
     {
-#if _DEBUG
-        OutputDebugString(L"Running in shared memory mode");
-#endif
+        LOG(L"Running in shared memory mode");
         use_shared_memory = true;
     }
     else if (!wcscmp(szArgList[1], L"-f"))
     {
-#if _DEBUG
-        OutputDebugString(L"Running in file mode");
-#endif
+        LOG(L"Running in file mode");
         use_shared_memory = false;
     }
     else
     {
-#if _DEBUG
-        OutputDebugString(L"Wrong parameters");
-#endif
+        LOG(L"Wrong parameters");
         return 0;
     }
 
@@ -232,9 +204,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     {
         if (!setup_shmem(szArgList[2]))
         {
-#if _DEBUG
-            OutputDebugString(L"Error mapping shared memory");
-#endif
+            LOG(L"Error mapping shared memory");
             return 1;
         }
     }
