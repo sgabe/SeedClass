@@ -100,7 +100,6 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
     LPWSTR* szArgList = NULL;
     HENHMETAFILE hEmf = NULL;
     uint32_t sample_size = 0;
-    char* sample_bytes = NULL;
 
     IStream* stream = NULL;
     Gdiplus::Image* image = NULL;
@@ -125,17 +124,26 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
             goto cleanup;
         }
 
-        sample_size = *(uint32_t*)(shm_data);
-        if (sample_size > MAX_SAMPLE_SIZE) sample_size = MAX_SAMPLE_SIZE;
-        sample_bytes = (char*)malloc(sample_size);
-        if (sample_bytes == NULL)
+        uint32_t raw_sample_size = 0;
+        memcpy(&raw_sample_size, shm_data, sizeof(raw_sample_size));
+
+        sample_size = raw_sample_size;
+        if (sample_size > MAX_SAMPLE_SIZE)
+            sample_size = MAX_SAMPLE_SIZE;
+
+        const BYTE* sample_data = NULL;
+        if (sample_size != 0)
+            sample_data = reinterpret_cast<const BYTE*>(shm_data) + sizeof(uint32_t);
+
+        stream = SHCreateMemStream(sample_data, sample_size);
+
+        if (stream == NULL)
         {
-            LOG(L"Insufficient memory available");
+            LOG(L"Failed to create memory stream");
             ret = 1;
             goto cleanup;
         }
-        memcpy(sample_bytes, shm_data + sizeof(uint32_t), sample_size);
-        stream = SHCreateMemStream(reinterpret_cast<BYTE*>(sample_bytes), sample_size);
+
         image = Gdiplus::Image::FromStream(stream);
         metafile = new Gdiplus::Metafile(stream, hDC);
     }
@@ -234,7 +242,6 @@ cleanup:
     if (thumbnail) delete thumbnail;
     if (image) delete image;
     if (metafile) delete metafile;
-    if (sample_bytes) free(sample_bytes);
     if (hEmf) DeleteEnhMetaFile(hEmf);
     if (stream) stream->Release();
     if (szArgList) LocalFree(szArgList);
