@@ -32,8 +32,9 @@ static int CALLBACK EmfEnumProc(
 
 extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
 {
-    int argCount;
-    LPWSTR* szArgList;
+    int ret = 0;
+    int argCount = 0;
+    LPWSTR* szArgList = NULL;
     HENHMETAFILE hEmf = NULL;
     uint32_t sample_size = 0;
     char* sample_bytes = NULL;
@@ -57,7 +58,8 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
         if (shm_data == NULL)
         {
             LOG(L"Failed to retrieve image data from shared memory");
-            return 1;
+            ret = 1;
+            goto cleanup;
         }
 
         sample_size = *(uint32_t*)(shm_data);
@@ -66,7 +68,8 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
         if (sample_bytes == NULL)
         {
             LOG(L"Insufficient memory available");
-            return 1;
+            ret = 1;
+            goto cleanup;
         }
         memcpy(sample_bytes, shm_data + sizeof(uint32_t), sample_size);
         stream = SHCreateMemStream(reinterpret_cast<BYTE*>(sample_bytes), sample_size);
@@ -96,7 +99,9 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
             graphics = NULL;
         }
 
-        graphics = Graphics::FromImage(metafile);
+        if (metafile)
+            graphics = Graphics::FromImage(metafile);
+
         if (graphics && (Ok == graphics->GetLastStatus()))
         {
             LOG(L"Graphics created from metafile");
@@ -161,34 +166,44 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
         graphics->DrawImage(metafile, Rect(0, 0, 100, 100));
     }
 
+cleanup:
+    if (graphics) delete graphics;
+    if (thumbnail) delete thumbnail;
     if (image) delete image;
     if (metafile) delete metafile;
-    if (thumbnail) delete thumbnail;
-    if (graphics) delete graphics;
     if (sample_bytes) free(sample_bytes);
     if (hEmf) DeleteEnhMetaFile(hEmf);
     if (stream) stream->Release();
+    if (szArgList) LocalFree(szArgList);
 
-    LocalFree(szArgList);
-
-    return 0;
+    return ret;
 }
 
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    int argCount;
-    LPWSTR* szArgList;
-    ULONG_PTR gdiplusToken;
+    int ret = 1;
+    int argCount = 0;
+    LPWSTR* szArgList = NULL;
+    ULONG_PTR gdiplusToken = 0;
+    bool gdiplusStarted = false;
+    bool shmemMapped = false;
+    HDC hDC = NULL;
     GdiplusStartupInput gdiplusStartupInput;
 
-    GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+    if (GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL) != Ok)
+    {
+        LOG(L"GdiplusStartup failed");
+        goto cleanup;
+    }
 
-    szArgList = CommandLineToArgvW(GetCommandLine(), &argCount);
+    gdiplusStarted = true;
+
+    szArgList = CommandLineToArgvW(GetCommandLineW(), &argCount);
     if (szArgList == NULL || argCount < 3)
     {
         LOG(L"Not enough parameters");
-        return 1;
+        goto cleanup;
     }
 
     if (!wcscmp(szArgList[1], L"-s"))
@@ -204,7 +219,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     else
     {
         LOG(L"Wrong parameters");
-        return 0;
+        goto cleanup;
     }
 
     if (use_shared_memory)
@@ -212,18 +227,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         if (!setup_shmem(szArgList[2]))
         {
             LOG(L"Error mapping shared memory");
-            return 1;
+            goto cleanup;
         }
+
+        shmemMapped = true;
     }
 
-    HDC hDC = GetDC(NULL);
+    hDC = GetDC(NULL);
 
-    Fuzz(hDC);
+    ret = Fuzz(hDC);
 
-    if (use_shared_memory) clear_shmem();
-    ReleaseDC(NULL, hDC);
-    LocalFree(szArgList);
-    GdiplusShutdown(gdiplusToken);
+cleanup:
+    if (shmemMapped) clear_shmem();
+    if (hDC) ReleaseDC(NULL, hDC);
+    if (szArgList) LocalFree(szArgList);
+    if (gdiplusStarted) GdiplusShutdown(gdiplusToken);
 
-    return 0;
+    return ret;
 }
