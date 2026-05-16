@@ -108,9 +108,25 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
 
     if (!use_shared_memory)
     {
-        SHCreateStreamOnFile(input_path, NULL, &stream);
+        HRESULT hr = SHCreateStreamOnFileW(
+            input_path,
+            STGM_READ | STGM_SHARE_DENY_NONE,
+            &stream);
+
+        if (FAILED(hr) || stream == NULL)
+        {
+            LOG(L"Failed to create file stream");
+            ret = 1;
+            goto cleanup;
+        }
+
         image = Gdiplus::Image::FromStream(stream);
-        metafile = new Gdiplus::Metafile(stream, hDC);
+
+        LARGE_INTEGER zero = {};
+        if (SUCCEEDED(stream->Seek(zero, STREAM_SEEK_SET, NULL)))
+        {
+            metafile = new Gdiplus::Metafile(stream);
+        }
     }
     else
     {
@@ -142,7 +158,12 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
         }
 
         image = Gdiplus::Image::FromStream(stream);
-        metafile = new Gdiplus::Metafile(stream, hDC);
+
+        LARGE_INTEGER zero = {};
+        if (SUCCEEDED(stream->Seek(zero, STREAM_SEEK_SET, NULL)))
+        {
+            metafile = new Gdiplus::Metafile(stream);
+        }
     }
 
     if (image && (Ok == image->GetLastStatus()))
@@ -168,21 +189,24 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
         }
 
         if (metafile)
+        {
             graphics = Graphics::FromImage(metafile);
 
-        if (graphics && (Ok == graphics->GetLastStatus()))
-        {
-            LOG(L"Graphics created from metafile");
-            graphics->DrawImage(image, 0, 0);
+            if (graphics && graphics->GetLastStatus() == Ok)
+            {
+                LOG(L"Graphics created from metafile");
+                graphics->DrawImage(image, 0, 0);
+            }
         }
     }
 
-    if (metafile)
+    if (metafile && metafile->GetLastStatus() == Ok)
     {
         LOG(L"Metafile loaded");
         RECT rcZero = { 0, 0, 0, 0 };
         RECT rcSmall = { 0, 0, 1, 1 };
         RECT rcNormal = { 0, 0, 512, 512 };
+
         hEmf = metafile->GetHENHMETAFILE();
 
         LOG(L"Metafile played");
