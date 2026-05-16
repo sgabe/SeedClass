@@ -13,6 +13,69 @@ using namespace Gdiplus;
 #define LOG(msg) do {} while (0)
 #endif
 
+unsigned char* shm_data = NULL;
+bool use_shared_memory = false;
+HANDLE map_file = NULL;
+
+int setup_shmem(LPCWSTR name)
+{
+    if (name == NULL)
+    {
+        LOG(L"Invalid shared memory name");
+        return 0;
+    }
+
+    clear_shmem();
+
+    map_file = OpenFileMappingW(
+        FILE_MAP_READ,
+        FALSE,
+        name);
+
+    if (map_file == NULL)
+    {
+        LOG(L"Error opening shared memory mapping");
+        return 0;
+    }
+
+    shm_data = static_cast<unsigned char*>(
+        MapViewOfFile(
+            map_file,
+            FILE_MAP_READ,
+            0,
+            0,
+            MAX_SAMPLE_SIZE + sizeof(uint32_t)));
+
+    if (shm_data == NULL)
+    {
+        LOG(L"Error mapping shared memory view");
+
+        CloseHandle(map_file);
+        map_file = NULL;
+
+        return 0;
+    }
+
+    return 1;
+}
+
+int clear_shmem(void)
+{
+    if (shm_data)
+    {
+        UnmapViewOfFile(shm_data);
+        shm_data = NULL;
+    }
+
+    if (map_file)
+    {
+        CloseHandle(map_file);
+        map_file = NULL;
+    }
+
+    return 0;
+}
+
 static UINT GetMaxDerivedEmfBits()
 {
     if (MAX_SAMPLE_SIZE > (UINT_MAX / 4))
