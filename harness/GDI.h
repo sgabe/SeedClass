@@ -29,6 +29,7 @@
 extern unsigned char* shm_data;
 extern bool use_shared_memory;
 extern HANDLE map_file;
+extern LPCWSTR input_path;
 
 int setup_shmem(LPCWSTR name);
 int clear_shmem(void);

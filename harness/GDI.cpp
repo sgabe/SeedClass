@@ -16,6 +16,7 @@ using namespace Gdiplus;
 unsigned char* shm_data = NULL;
 bool use_shared_memory = false;
 HANDLE map_file = NULL;
+LPCWSTR input_path = NULL;
 
 int setup_shmem(LPCWSTR name)
 {
@@ -96,8 +97,6 @@ static int CALLBACK EmfEnumProc(
 extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
 {
     int ret = 0;
-    int argCount = 0;
-    LPWSTR* szArgList = NULL;
     HENHMETAFILE hEmf = NULL;
     uint32_t sample_size = 0;
 
@@ -107,11 +106,9 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
     Gdiplus::Metafile* metafile = NULL;
     Gdiplus::Graphics* graphics = NULL;
 
-    szArgList = CommandLineToArgvW(GetCommandLine(), &argCount);
-
     if (!use_shared_memory)
     {
-        SHCreateStreamOnFile(szArgList[2], NULL, &stream);
+        SHCreateStreamOnFile(input_path, NULL, &stream);
         image = Gdiplus::Image::FromStream(stream);
         metafile = new Gdiplus::Metafile(stream, hDC);
     }
@@ -244,7 +241,6 @@ cleanup:
     if (metafile) delete metafile;
     if (hEmf) DeleteEnhMetaFile(hEmf);
     if (stream) stream->Release();
-    if (szArgList) LocalFree(szArgList);
 
     return ret;
 }
@@ -275,6 +271,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         LOG(L"Not enough parameters");
         goto cleanup;
     }
+
+    input_path = szArgList[2];
 
     if (!wcscmp(szArgList[1], L"-s"))
     {
