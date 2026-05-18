@@ -209,44 +209,47 @@ extern "C" __declspec(noinline dllexport) int Fuzz(HDC hDC)
 
         hEmf = metafile->GetHENHMETAFILE();
 
-        LOG(L"Metafile played");
-
-        PlayEnhMetaFile(hDC, hEmf, &rcZero);
-        PlayEnhMetaFile(hDC, hEmf, &rcSmall);
-        PlayEnhMetaFile(hDC, hEmf, &rcNormal);
-
-        LOG(L"Metafile enumerated");
-
-        EnumEnhMetaFile(hDC, hEmf, EmfEnumProc, NULL, &rcZero);
-        EnumEnhMetaFile(hDC, hEmf, EmfEnumProc, NULL, &rcSmall);
-        EnumEnhMetaFile(hDC, hEmf, EmfEnumProc, NULL, &rcNormal);
-
-        UINT sz = GetEnhMetaFileBits(hEmf, 0, NULL);
-        if (sz && sz <= GetMaxDerivedEmfBits())
+        if (hDC && hEmf)
         {
-            LOG(L"Metafile size retrieved");
-            std::vector<BYTE> buf(sz);
-            if (GetEnhMetaFileBits(hEmf, sz, buf.data()))
+            LOG(L"Metafile played");
+
+            PlayEnhMetaFile(hDC, hEmf, &rcZero);
+            PlayEnhMetaFile(hDC, hEmf, &rcSmall);
+            PlayEnhMetaFile(hDC, hEmf, &rcNormal);
+
+            LOG(L"Metafile enumerated");
+
+            EnumEnhMetaFile(hDC, hEmf, EmfEnumProc, NULL, &rcZero);
+            EnumEnhMetaFile(hDC, hEmf, EmfEnumProc, NULL, &rcSmall);
+            EnumEnhMetaFile(hDC, hEmf, EmfEnumProc, NULL, &rcNormal);
+
+            UINT sz = GetEnhMetaFileBits(hEmf, 0, NULL);
+            if (sz && sz <= GetMaxDerivedEmfBits())
             {
-                LOG(L"Metafile bits extracted");
-                HENHMETAFILE h2 = SetEnhMetaFileBits(sz, buf.data());
-                if (h2)
+                LOG(L"Metafile size retrieved");
+                std::vector<BYTE> buf(sz);
+                if (GetEnhMetaFileBits(hEmf, sz, buf.data()))
                 {
-                    LOG(L"Metafile reconstructed");
-                    PlayEnhMetaFile(hDC, h2, &rcZero);
-                    PlayEnhMetaFile(hDC, h2, &rcSmall);
-                    PlayEnhMetaFile(hDC, h2, &rcNormal);
-                    DeleteEnhMetaFile(h2);
+                    LOG(L"Metafile bits extracted");
+                    HENHMETAFILE h2 = SetEnhMetaFileBits(sz, buf.data());
+                    if (h2)
+                    {
+                        LOG(L"Metafile reconstructed");
+                        PlayEnhMetaFile(hDC, h2, &rcZero);
+                        PlayEnhMetaFile(hDC, h2, &rcSmall);
+                        PlayEnhMetaFile(hDC, h2, &rcNormal);
+                        DeleteEnhMetaFile(h2);
+                    }
                 }
             }
-        }
 
-        for (size_t x = 1; x <= 8; x++)
-        {
-            for (size_t y = 0; y <= 4; y++)
+            for (size_t x = 1; x <= 8; x++)
             {
-                LOG(L"Metafile converted");
-                Gdiplus::Metafile::EmfToWmfBits(hEmf, 0, NULL, (INT)x, (INT)y);
+                for (size_t y = 0; y <= 4; y++)
+                {
+                    LOG(L"Metafile converted");
+                    Gdiplus::Metafile::EmfToWmfBits(hEmf, 0, NULL, (INT)x, (INT)y);
+                }
             }
         }
     }
