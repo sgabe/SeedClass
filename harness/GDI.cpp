@@ -281,7 +281,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ULONG_PTR gdiplusToken = 0;
     bool gdiplusStarted = false;
     bool shmemMapped = false;
-    HDC hDC = NULL;
+    HDC screenDC = NULL;
+    HDC memDC = NULL;
+    HBITMAP hBitmap = NULL;
+    HGDIOBJ oldBitmap = NULL;
     GdiplusStartupInput gdiplusStartupInput;
 
     if (GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL) != Ok)
@@ -328,13 +331,45 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         shmemMapped = true;
     }
 
-    hDC = GetDC(NULL);
+    screenDC = GetDC(NULL);
+    if (screenDC == NULL)
+    {
+        LOG(L"GetDC failed");
+        goto cleanup;
+    }
 
-    ret = Fuzz(hDC);
+    memDC = CreateCompatibleDC(screenDC);
+    if (memDC == NULL)
+    {
+        LOG(L"CreateCompatibleDC failed");
+        goto cleanup;
+    }
+
+    hBitmap = CreateCompatibleBitmap(screenDC, 1024, 1024);
+    if (hBitmap == NULL)
+    {
+        LOG(L"CreateCompatibleBitmap failed");
+        goto cleanup;
+    }
+
+    ReleaseDC(NULL, screenDC);
+    screenDC = NULL;
+
+    oldBitmap = SelectObject(memDC, hBitmap);
+    if (oldBitmap == NULL || oldBitmap == HGDI_ERROR)
+    {
+        LOG(L"SelectObject failed");
+        goto cleanup;
+    }
+
+    ret = Fuzz(memDC);
 
 cleanup:
+    if (oldBitmap && oldBitmap != HGDI_ERROR) SelectObject(memDC, oldBitmap);
+    if (hBitmap) DeleteObject(hBitmap);
+    if (memDC) DeleteDC(memDC);
+    if (screenDC) ReleaseDC(NULL, screenDC);
     if (shmemMapped) clear_shmem();
-    if (hDC) ReleaseDC(NULL, hDC);
     if (szArgList) LocalFree(szArgList);
     if (gdiplusStarted) GdiplusShutdown(gdiplusToken);
 
