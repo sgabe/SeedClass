@@ -1678,8 +1678,8 @@ typedef struct tagEMRCREATEBRUSHINDIRECT {
  */
 typedef struct tagEMRCREATECOLORSPACE {
   DWORD iType = { 0x00000063 };
-  DWORD	ihCS  = { 0x00000018 };
-  DWORD ics;
+  DWORD nSize = { 0x00000058 };
+  DWORD ihCS;
   LOGCOLORSPACEA lcs;
 } EMRCREATECOLORSPACE;
 
