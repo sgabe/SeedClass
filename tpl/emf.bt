@@ -1462,7 +1462,7 @@ typedef struct tagEMRPOLYBEZIERTO16 {
   RECTL rclBounds;
   DWORD cntPoints <min=1, max=1>;
   POINTS aPoints[cntPoints];
-} EMRPOLYBEZIERTO;
+} EMRPOLYBEZIERTO16;
 
 /** 2.3.5.20 EMR_POLYDRAW Record
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/95794faf-eed8-4d5b-b6ff-c6765a58166e
@@ -1978,7 +1978,7 @@ typedef struct tagEMRWIDENPATH {
 } EMRWIDENPATH;
 
 typedef struct tagEMRABORTPATH {
-  DWORD iType = { 0x00000042 };
+  DWORD iType = { 0x00000044 };
   DWORD	nSize = { 0x00000008 };
 } EMRABORTPATH;
 
@@ -2004,7 +2004,7 @@ typedef struct tagEMRCOLORMATCHTOTARGETW {
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/e9a05924-e704-4037-8312-6bef2e19f6bd
  */
 typedef struct tagEMRFORCEUFIMAPPING {
-  DWORD iType = { 0x0000006dd };
+  DWORD iType = { 0x0000006d };
   DWORD	nSize = { 0x00000010 };
   UniversalFontId ufi;
 } EMRFORCEUFIMAPPING;
@@ -2033,7 +2033,7 @@ typedef struct tagEMRMOVETOEX {
  *
  */
 typedef struct tagEMRREALIZEPALETTE {
-  DWORD iType = { 0x00000052 };
+  DWORD iType = { 0x00000034 };
   DWORD	nSize = { 0x00000008 };
 } EMRREALIZEPALETTE;
 
