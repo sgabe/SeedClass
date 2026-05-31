@@ -603,7 +603,10 @@ typedef struct _TRIVERTEX {
 } TRIVERTEX;
 
 typedef struct {
-  WORD desc[EmfHeader.nDescription];
+  if (EmfHeader.nDescription > 0) {
+    WORD desc[EmfHeader.nDescription - 1];
+    WORD terminator = { 0 };
+  }
 } EMRDESCRIPTION;
 
 // https://docs.microsoft.com/en-us/previous-versions/ms911013(v=msdn.10)
