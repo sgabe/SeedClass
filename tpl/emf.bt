@@ -558,15 +558,6 @@ typedef struct {
   DWORD lbHatch;
 } LogBrushEx;
 
-/** 2.2.17 LogPalette Object
- * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/758f047d-765e-424c-9204-a833b7b4e527
- */
-typedef struct tagLOGPALETTE {
-  WORD palVersion;
-  WORD palNumEntries = { 0x1 };
-  LOGPALETTEENTRY palPalEntry[palNumEntries];
-} LOGPALETTE;
-
 /** 2.2.18 LogPaletteEntry Object
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/c1f7b285-be16-4112-a4e6-0b2fd4c1d148
  */
@@ -576,6 +567,15 @@ typedef struct tagLOGPALETTEENTRY {
   uchar Green;
   uchar Red;
 } LOGPALETTEENTRY;
+
+/** 2.2.17 LogPalette Object
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/758f047d-765e-424c-9204-a833b7b4e527
+ */
+typedef struct tagLOGPALETTE {
+  WORD palVersion;
+  WORD palNumEntries = { 0x1 };
+  LOGPALETTEENTRY palPalEntry[palNumEntries];
+} LOGPALETTE;
 
 /** 2.2.20 LogPenEx
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/5b67b3ee-ea00-4f80-9b73-2959804381be
