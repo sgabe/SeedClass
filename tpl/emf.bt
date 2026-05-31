@@ -2077,7 +2077,7 @@ typedef struct tagEMRSETBKMODE {
  */
 typedef struct tagEMRSETMAPMODE {
   DWORD iType = { 0x00000011 };
-  DWORD	nSize = { 0x00000010 };
+  DWORD	nSize = { 0x0000000C };
   MapMode iMapMode;
 } EMRSETMAPMODE;
 
