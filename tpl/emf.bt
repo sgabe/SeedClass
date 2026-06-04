@@ -1891,8 +1891,8 @@ typedef struct tagEMRDELETECOLORSPACE {
  */
 typedef struct tagEMRDELETEOBJECT {
   DWORD iType = { 0x00000028 };
-  DWORD	nSize = { 0x0000000C };
-  DWORD ihCS;
+  DWORD nSize = { 0x0000000C };
+  DWORD ihObject;
 } EMRDELETEOBJECT;
 
 /** 8.4 EMR_RESIZEPALETTE
