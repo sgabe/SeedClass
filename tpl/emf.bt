@@ -631,7 +631,7 @@ typedef struct tagREGIONDATAHEADER {
   DWORD nSize    = { 0x00000020 };
   DWORD iType    = { 0x00000001 };
   DWORD cntRects = { 0x00000001 };
-  DWORD rgnSize;
+  DWORD rgnSize  = { 0x00000010 };
   RECTL rgnBounds;
 } REGIONDATAHEADER;
 
@@ -640,7 +640,7 @@ typedef struct tagREGIONDATAHEADER {
  */
 typedef struct tagREGIONDATA {
   REGIONDATAHEADER rgnDataHeader;
-  RECTL data[rgnDataHeader.cntRects];
+  RECTL data[1];
 } REGIONDATA;
 
 /** 2.2.27 UniversalFontId Object
