@@ -1293,10 +1293,10 @@ typedef enum <DWORD> {
  */
 typedef struct tagEMREXTFLOODFILL {
   DWORD iType = { 0x00000035 };
-  DWORD	nSize = { 0x00000018 };
-  POINT ptlStart;
+  DWORD nSize = { 0x00000018 };
+  POINTL ptlStart;
   COLORREF crColor;
-  DWORD iMode;
+  FLOODFILL iMode = { FLOODFILLSURFACE };
 } EMREXTFLOODFILL;
 
 /** 2.3.5.7 EMR_EXTTEXTOUTA
