@@ -1366,26 +1366,26 @@ typedef struct tagEMRFILLPATH {
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/a1bb0f88-bb22-4956-b45a-7005546561cc
  */
 typedef struct tagEMRFILLRGN {
-  DWORD iType = { 0x00000047 };
-  DWORD	nSize = { 0x00000020 };
+  DWORD iType       = { 0x00000047 };
+  DWORD nSize       = { 0x00000050 };
   RECTL rclBounds;
-  DWORD rgnDataSize = { 0x00000001 };
+  DWORD rgnDataSize = { 0x00000030 };
   DWORD ihBrush;
-  REGIONDATA rgnData[rgnDataSize];
+  REGIONDATA rgnData;
 } EMRFILLRGN;
 
 /** 2.3.5.11 EMR_FRAMERGN
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/c370fc16-9045-467b-a125-7239428df6b3
  */
 typedef struct tagEMRFRAMERGN {
-  DWORD iType = { 0x00000048 };
-  DWORD	nSize = { 0x00000020 };
+  DWORD iType       = { 0x00000048 };
+  DWORD nSize       = { 0x00000058 };
   RECTL rclBounds;
-  DWORD rgnDataSize = { 0x00000001 };
+  DWORD rgnDataSize = { 0x00000030 };
   DWORD ihBrush;
-  DWORD width;
-  DWORD height;
-  REGIONDATA rgnData[rgnDataSize];
+  LONG  width;
+  LONG  height;
+  REGIONDATA rgnData;
 } EMRFRAMERGN;
 
 /** 2.3.5.12 EMR_GRADIENTFILL
@@ -1415,11 +1415,11 @@ typedef struct tagEMRLINETO {
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/68c457dc-6df3-4609-b6f9-e28e5ca4d9c1
  */
 typedef struct tagEMRPAINTRGN {
-  DWORD iType = { 0x0000004A };
-  DWORD	nSize = { 0x00000010 };
+  DWORD iType       = { 0x0000004A };
+  DWORD nSize       = { 0x0000004C };
   RECTL rclBounds;
-  DWORD rgnDataSize = { 0x00000001 };
-  REGIONDATA rgnData[rgnDataSize];
+  DWORD rgnDataSize = { 0x00000030 };
+  REGIONDATA rgnData;
 } EMRPAINTRGN;
 
 /** 2.3.5.15 EMR_PIE
