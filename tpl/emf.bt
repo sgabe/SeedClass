@@ -1234,7 +1234,7 @@ typedef struct {
  */
 typedef struct tagEMRANGLEARC {
   DWORD iType = { 0x00000029 };
-  DWORD	nSize = { 0x00000018 };
+  DWORD nSize = { 0x0000001C };
   POINT ptlCenter;
   DWORD nRadius;
   FLOAT eStartAngle;
