@@ -1159,12 +1159,17 @@ typedef struct tagEMRCOMMENT {
 } EMRCOMMENT;
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/929b78e1-b848-44a5-9fac-327cae5c2ae5
-typedef struct tagEMRCOMMENTEMFPLUS {
+typedef struct tagEMRCOMMENTEMFPLUS_EOF {
   DWORD iType = { 0x00000046 };
-  DWORD nSize = { 0x0000000c };
-  DWORD DataSize <min=4, max=32>;
-  DWORD CommentIdentifier = { 0x2B464D45 };
-} EMRCOMMENTEMFPLUS;
+  DWORD nSize = { 0x0000001C };
+  DWORD DataSize = { 0x00000010 };
+  DWORD CommentIdentifier = { 0x2B464D45 }; // "EMF+"
+
+  WORD  EmfPlusType  = { 0x4002 }; // EmfPlusEndOfFile
+  WORD  EmfPlusFlags = { 0x0000 };
+  DWORD EmfPlusSize  = { 0x0000000C };
+  DWORD EmfPlusDataSize = { 0x00000000 };
+} EMRCOMMENTEMFPLUS_EOF;
 
 //------------------------------------------------
 // 2.3.4. Control Record Types
