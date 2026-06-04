@@ -572,8 +572,8 @@ typedef struct tagLOGPALETTEENTRY {
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/758f047d-765e-424c-9204-a833b7b4e527
  */
 typedef struct tagLOGPALETTE {
-  WORD palVersion;
-  WORD palNumEntries = { 0x1 };
+  WORD palVersion    = { 0x0300 };
+  WORD palNumEntries = { 0x0001 };
   LOGPALETTEENTRY palPalEntry[palNumEntries];
 } LOGPALETTE;
 
@@ -1768,8 +1768,8 @@ typedef struct tagEMRCREATEMONOBRUSH {
  */
 typedef struct tagEMRCREATEPALETTE {
   DWORD iType = { 0x00000031 };
-  DWORD	nSize = { 0x00000014 };
-  DWORD ihPal;
+  DWORD nSize = { 0x00000014 };
+  DWORD ihPal = { 2 };
   LOGPALETTE lgpl;
 } EMRCREATEPALETTE;
 
@@ -1909,8 +1909,8 @@ typedef struct tagEMRSELECTOBJECT {
  */
 typedef struct tagEMRSELECTPALETTE {
   DWORD iType = { 0x00000030 };
-  DWORD	nSize = { 0x0000000C };
-  DWORD ihPal;
+  DWORD nSize = { 0x0000000C };
+  DWORD ihPal = { 0x8000000F }; // DEFAULT_PALETTE
 } EMRSELECTPALETTE;
 
 /** 8.7 EMR_SETCOLORSPACE
