@@ -244,17 +244,17 @@ typedef struct tagLOGCOLORSPACEW {
 /** 2.2.2.15 PointL Object
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/4eeaf09e-e41a-491c-93a1-7aec0afd4f96
  */
- typedef struct tagPOINTL {
-  DWORD x;
-  DWORD y;
+typedef struct tagPOINTL {
+  LONG x;
+  LONG y;
 } POINTL;
 
 /** 2.2.2.16 PointS Object
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/3066aeb3-12f5-4ed9-bf25-18c73a6e7175
  */
- typedef struct tagPOINTS {
-  WORD x;
-  WORD y;
+typedef struct tagPOINTS {
+  SHORT x;
+  SHORT y;
 } POINTS;
 
 //------------------------------------------------
