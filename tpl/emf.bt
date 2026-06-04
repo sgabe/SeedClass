@@ -721,16 +721,16 @@ typedef struct tagBITMAPINFOHEADER {
   }
 
   // Size, in bytes, of the image.
-  if (biCompression == BI_RGB) { 
+  if (biCompression == BI_RGB) {
     DWORD biSizeImage = { 0 }; // May be set to zero for BI_RGB bitmaps.
-  } else {	
+  } else {
     DWORD biSizeImage;
   }
 
   LONG biXPelsPerMeter; // Horizontal resolution, in pixels-per-meter, of the target device for the bitmap.
   LONG biYPelsPerMeter; // Vertical resolution, in pixels-per-meter, of the target device for the bitmap.
 
-  // The number of color indexes in the color table that are actually used by the bitmap. 
+  // The number of color indexes in the color table that are actually used by the bitmap.
   switch(biBitCount) {
     case 8:
       DWORD biClrUsed <max=256>;
@@ -739,7 +739,7 @@ typedef struct tagBITMAPINFOHEADER {
     case 4:
       DWORD biClrUsed = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
       break;
-  
+
     case 2:
       DWORD biClrUsed = { 0, 1, 2, 3, 4 };
       break;
@@ -2285,16 +2285,16 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
 
   } else if (ReadUByte(FTell(), possible) == 0x8) {
     EMRPOLYPOLYGON PolyPolygon;
-    
+
   } else if (ReadUByte(FTell(), possible) == 0x9) {
     EMRSETWINDOWEXTEX SetWindowExtEx;
 
   } else if (ReadUByte(FTell(), possible) == 0xa) {
     EMRSETWINDOWORGEX SetWindowOrgEx;
-    
+
   } else if (ReadUByte(FTell(), possible) == 0xb) {
     EMRSETVIEWPORTEXTEX SetViewportExtEx;
-    
+
   } else if (ReadUByte(FTell(), possible) == 0xc) {
     EMRSETVIEWPORTORGEX SetViewportOrgEx;
 
@@ -2303,7 +2303,7 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
 
   } else if (ReadUByte(FTell(), possible) == 0x11) {
     EMRSETMAPMODE SetMapMode;
-    
+
   } else if (ReadUByte(FTell(), possible) == 0x12) {
     EMRSETBKMODE SetBkMode;
 
@@ -2312,13 +2312,13 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
 
   } else if (ReadUByte(FTell(), possible) == 0x15) {
     EMRSETSTRETCHBLTMODE SetStretchMode;
-    
+
   } else if (ReadUByte(FTell(), possible) == 0x16) {
     EMRSETTEXTALIGN SetTextAlign;
-    
+
   } else if (ReadUByte(FTell(), possible) == 0x18) {
     EMRSETTEXTCOLOR SetTextColor;
-    
+
   } else if (ReadUByte(FTell(), possible) == 0x19) {
     EMRSETBKCOLOR SetBkColor;
 
@@ -2399,7 +2399,7 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
 
   } else if (ReadUByte(FTell(), possible) == 0x37) {
     EMRARCTO ArcTo;
-    
+
   } else if (ReadUByte(FTell(), possible) == 0x38) {
     EMRPOLYDRAW PolyDraw;
 
@@ -2471,7 +2471,7 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
 
   } else if (ReadUByte(FTell(), possible) == 0x53) {
     EMREXTTEXTOUTA ExtTextOutA;
-    
+
   } else if (ReadUByte(FTell(), possible) == 0x54) {
     EMREXTTEXTOUTW ExtTextOutW;
 
