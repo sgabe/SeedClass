@@ -1283,6 +1283,11 @@ typedef struct tagEMRELLIPSE {
   RECTL rclBox;
 } EMRELLIPSE;
 
+typedef enum <DWORD> {
+  FLOODFILLBORDER  = 0x00000000,
+  FLOODFILLSURFACE = 0x00000001
+} FLOODFILL;
+
 /** 2.3.5.6 EMR_EXTFLOODFILL
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/4f1b52ba-325a-4da8-bd5b-987c4a572e5f
  */
