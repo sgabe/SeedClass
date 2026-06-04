@@ -1553,12 +1553,12 @@ typedef struct tagEMRPOLYLINETO {
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/c60ff127-2711-42d3-85d4-502ca2e4caef
  */
 typedef struct tagEMRPOLYPOLYGON {
-  DWORD iType = { 0x00000008 };
-  DWORD	nSize = { 0x0000002C };
+  DWORD iType       = { 0x00000008 };
+  DWORD nSize       = { 0x0000003C };
   RECTL rclBounds;
-  DWORD nPolys <min=1, max=1>;
-  DWORD cntPoints <min=1, max=1>;
-  DWORD aPolyCounts[nPolys];
+  DWORD nPolys      = { 1 };
+  DWORD cntPoints   = { 3 };
+  DWORD aPolyCounts = { 3 };
   POINTL aPoints[cntPoints];
 } EMRPOLYPOLYGON;
 
