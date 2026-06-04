@@ -213,16 +213,16 @@ typedef struct {
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/0a8def2e-0d65-4174-9f67-17c8f3341514
  */
 typedef struct tagLOGCOLORSPACEA {
-  DWORD lcsSignature;
-  DWORD lcsVersion;
-  DWORD lcsSize;
-  LogicalColorSpace lcsCSType;
-  GamutMappingIntent lcsIntent;
+  DWORD lcsSignature = { 0x50534F43 }; // "PSOC"
+  DWORD lcsVersion   = { 0x00000400 };
+  DWORD lcsSize      = { 0x00000148 }; // 328 bytes
+  LogicalColorSpace lcsCSType = { LCS_sRGB };
+  GamutMappingIntent lcsIntent = { LCS_GM_IMAGES };
   CIEXYZTRIPLE lcsEndpoints;
-  DWORD lcsGammaRed;
-  DWORD lcsGammaGreen;
-  DWORD lcsGammaBlue;
-  CHAR lcsFilename[8];
+  DWORD lcsGammaRed   = { 0 };
+  DWORD lcsGammaGreen = { 0 };
+  DWORD lcsGammaBlue  = { 0 };
+  CHAR lcsFilename[260];
 } LOGCOLORSPACEA;
 
 /** 2.2.2.12 LogColorSpaceW
