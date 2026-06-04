@@ -536,17 +536,17 @@ typedef struct _GRADIENT_RECT {
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/00cc8ab4-ea2e-4bb1-9569-1201af47a0c8
  */
 typedef struct {
-  DWORD cbPixelFormat;
-  DWORD offPixelFormat;
-  DWORD bOpenGL = { {0}, {1} };
+  DWORD cbPixelFormat  = { 0 };
+  DWORD offPixelFormat = { 0 };
+  DWORD bOpenGL        = { 0 };
 } HeaderExtension1; // Size is 0x64
 
 /** 2.2.11 HeaderExtension2 Object
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/9e96e5cf-e949-49ae-baa8-3fffd948e588
  */
 typedef struct {
-  DWORD MicrometersX;
-  DWORD MicrometersY;
+  DWORD MicrometersX = { 0x000A55D5 }; // or szlMillimeters.cx * 1000
+  DWORD MicrometersY = { 0x000675A5 };
 } HeaderExtension2; // Size is 0x6
 
 /** 2.2.12 LogBrushEx Object
@@ -1187,6 +1187,16 @@ typedef struct {
   DWORD SizeLast = { 0x00000014 }; // MUST be the same as Size and MUST be the last field of the record and hence the metafile.
 } EMREOF;
 
+typedef struct tagSIZEL_DEVICE {
+  LONG cx = { 0x00000780 };
+  LONG cy = { 0x00000780 };
+} SIZEL_DEVICE;
+
+typedef struct tagSIZEL_MILLIMETERS {
+  LONG cx = { 0x000002A5 };
+  LONG cy = { 0x000001A7 };
+} SIZEL_MILLIMETERS;
+
 /** 2.3.4.2.1 EMR_HEADER Record
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/80c0684b-9a0e-4bdb-8d6d-0e5a9e9673e7
  */
@@ -1199,13 +1209,13 @@ typedef struct {
   DWORD nVersion = { 0x00010000 };
   DWORD nBytes;                                        // Size of the metafile in bytes.
   DWORD nRecords <min=4, max=8>;                       // Number of records in the metafile.
-  WORD  nHandles;                                      // Number of handles in the handle table.
+  WORD  nHandles = { 0x0010 };                         // Number of handles in the handle table.
   WORD  sReserved = { 0 };
-  DWORD nDescription = { 0, 4, 8, 12, 16 };            // Number of chars in the unicode description string.
-  DWORD offDescription = { 0x0000006C };               // Offset to the metafile description record.
+  DWORD nDescription = { 0 };                          // Number of chars in the unicode description string.
+  DWORD offDescription = { 0 };                        // Offset to the metafile description record.
   DWORD nPalEntries = { 0 };                           // Number of entries in the metafile palette.
-  SIZEL szlDevice = { {0x00000780, 0x00000780} };      // Size of the reference device in pixels.
-  SIZEL szlMillimeters = { {0x000002A5, 0x000001A7} }; // Size of the reference device in millimeters.
+  SIZEL_DEVICE szlDevice;                              // Size of the reference device in pixels.
+  SIZEL_MILLIMETERS szlMillimeters;                    // Size of the reference device in millimeters.
   HeaderExtension1 EmfHeaderExtension1;
   HeaderExtension2 EmfHeaderExtension2;
 } EMRHEADER;
