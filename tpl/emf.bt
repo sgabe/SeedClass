@@ -333,7 +333,6 @@ typedef enum <DWORD> {
   EMR_WIDENPATH = 0x00000042,
   EMR_SELECTCLIPPATH = 0x00000043,
   EMR_ABORTPATH = 0x00000044,
-  EMR_RESERVED_69 = 0x00000045,
   EMR_COMMENT = 0x00000046,
   EMR_FILLRGN = 0x00000047,
   EMR_FRAMERGN = 0x00000048,
@@ -371,7 +370,6 @@ typedef enum <DWORD> {
   EMR_PIXELFORMAT = 0x00000068,
   EMR_DRAWESCAPE = 0x00000069,
   EMR_EXTESCAPE = 0x0000006A,
-  EMR_RESERVED_107 = 0x0000006B,
   EMR_SMALLTEXTOUT = 0x0000006C,
   EMR_FORCEUFIMAPPING = 0x0000006D,
   EMR_NAMEDESCAPE = 0x0000006E,
@@ -381,7 +379,6 @@ typedef enum <DWORD> {
   EMR_ALPHABLEND = 0x00000072,
   EMR_SETLAYOUT = 0x00000073,
   EMR_TRANSPARENTBLT = 0x00000074,
-  EMR_RESERVED_117 = 0x00000075,
   EMR_GRADIENTFILL = 0x00000076,
   EMR_SETLINKEDUFIS = 0x00000077,
   EMR_SETTEXTJUSTIFICATION = 0x00000078,
@@ -2204,19 +2201,46 @@ typedef struct tagEMRSETWORLDTRANSFORM {
 // 13. Reserved Record Types
 //------------------------------------------------
 
-typedef struct tagEMRRESERVED107 {
-  DWORD iType = { 0x0000006b };
-  DWORD	nSize = { 0x00000028 };
-  DWORD ReservedData[8];
-} EMRRESERVED107;
-
-typedef struct tagEMRRESERVED117 {
-  DWORD iType = { 0x00000075 };
-  DWORD	nSize = { 0x00000028 };
-  DWORD ReservedData[8];
-} EMRRESERVED117;
 
 //------------------------------------------------
+
+local UBYTE supportedRecordTypes[] = {
+  EMR_POLYLINE,
+  EMR_POLYLINETO,
+  EMR_POLYPOLYLINE,
+  EMR_POLYPOLYGON,
+  EMR_SETWINDOWEXTEX,
+  EMR_SETWINDOWORGEX,
+  EMR_SETVIEWPORTEXTEX,
+  EMR_SETVIEWPORTORGEX,
+  EMR_SETPIXELV,
+  EMR_SETMAPMODE,
+  EMR_SETBKMODE,
+  EMR_SETPOLYFILLMODE,
+  EMR_SETSTRETCHBLTMODE,
+  EMR_SETTEXTCOLOR,
+  EMR_SETBKCOLOR,
+  EMR_OFFSETCLIPRGN,
+  EMR_MOVETOEX,
+  EMR_EXCLUDECLIPRECT,
+  EMR_INTERSECTCLIPRECT,
+  EMR_SAVEDC,
+  EMR_ANGLEARC,
+  EMR_ELLIPSE,
+  EMR_RECTANGLE,
+  EMR_ROUNDRECT,
+  EMR_ARC,
+  EMR_CHORD,
+  EMR_PIE,
+  EMR_SELECTPALETTE,
+  EMR_REALIZEPALETTE,
+  EMR_EXTFLOODFILL,
+  EMR_LINETO,
+  EMR_ARCTO,
+  EMR_PAINTRGN,
+  EMR_DRAWESCAPE,
+  EMR_EXTESCAPE
+};
 
 LittleEndian();
 
@@ -2251,288 +2275,274 @@ FSeek(EmfHeader.nSize);
 
 local uint recCnt = 0;
 for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
-  local UBYTE possible[] = {
-    0x2, 0x3, 0x4, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xf,
-    0x11, 0x12, 0x13, 0x15, 0x16, 0x18, 0x19, 0x1a, 0x1b, 0x1d, 0x1e,
-    0x21, 0x22, 0x23, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
-    0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x3a, 0x3e, 0x3f,
-    0x40, 0x47, 0x48, 0x4a, 0x4c, 0x4d, 0x4e, 0x4f,
-    0x50, 0x51, 0x53, 0x55, 0x5d, 0x5e, 0x5f,
-    0x60, 0x63, 0x64, 0x65, 0x66, 0x67, 0x69, 0x6a, 0x6e, 0x6f,
-    0x72, 0x74, 0x76
-  };
-  // local UBYTE possible[] = { 0x66, 0x67 };
-  UBYTE recType <values=possible>;
+  UBYTE generatedRecordType <values=supportedRecordTypes>;
   FSkip(-1);
+  local UBYTE recordType = ReadUByte(FTell(), supportedRecordTypes);
 
-  if (ReadUByte(FTell(), possible) == 0x2) {
+  if (recordType == EMR_POLYBEZIER) {
     EMRPOLYBEZIER PolyBezier;
 
-  } else if (ReadUByte(FTell(), possible) == 0x3) {
+  } else if (recordType == EMR_POLYGON) {
     EMRPOLYGON Polygon;
 
-  } else if (ReadUByte(FTell(), possible) == 0x4) {
+  } else if (recordType == EMR_POLYLINE) {
     EMRPOLYLINE Polyline;
 
-  } else if (ReadUByte(FTell(), possible) == 0x5) {
+  } else if (recordType == EMR_POLYBEZIERTO) {
     EMRPOLYBEZIERTO PolyBezierTo;
 
-  } else if (ReadUByte(FTell(), possible) == 0x6) {
+  } else if (recordType == EMR_POLYLINETO) {
     EMRPOLYLINETO PolylineTo;
 
-  } else if (ReadUByte(FTell(), possible) == 0x7) {
+  } else if (recordType == EMR_POLYPOLYLINE) {
     EMRPOLYPOLYLINE PolyPolyline;
 
-  } else if (ReadUByte(FTell(), possible) == 0x8) {
+  } else if (recordType == EMR_POLYPOLYGON) {
     EMRPOLYPOLYGON PolyPolygon;
 
-  } else if (ReadUByte(FTell(), possible) == 0x9) {
+  } else if (recordType == EMR_SETWINDOWEXTEX) {
     EMRSETWINDOWEXTEX SetWindowExtEx;
 
-  } else if (ReadUByte(FTell(), possible) == 0xa) {
+  } else if (recordType == EMR_SETWINDOWORGEX) {
     EMRSETWINDOWORGEX SetWindowOrgEx;
 
-  } else if (ReadUByte(FTell(), possible) == 0xb) {
+  } else if (recordType == EMR_SETVIEWPORTEXTEX) {
     EMRSETVIEWPORTEXTEX SetViewportExtEx;
 
-  } else if (ReadUByte(FTell(), possible) == 0xc) {
+  } else if (recordType == EMR_SETVIEWPORTORGEX) {
     EMRSETVIEWPORTORGEX SetViewportOrgEx;
 
-  } else if (ReadUByte(FTell(), possible) == 0xf) {
+  } else if (recordType == EMR_SETPIXELV) {
     EMRSETPIXELV SetPixelV;
 
-  } else if (ReadUByte(FTell(), possible) == 0x11) {
+  } else if (recordType == EMR_SETMAPMODE) {
     EMRSETMAPMODE SetMapMode;
 
-  } else if (ReadUByte(FTell(), possible) == 0x12) {
+  } else if (recordType == EMR_SETBKMODE) {
     EMRSETBKMODE SetBkMode;
 
-  } else if (ReadUByte(FTell(), possible) == 0x13) {
+  } else if (recordType == EMR_SETPOLYFILLMODE) {
     EMRSETPOLYFILLMODE SetPolyFillMode;
 
-  } else if (ReadUByte(FTell(), possible) == 0x15) {
+  } else if (recordType == EMR_SETSTRETCHBLTMODE) {
     EMRSETSTRETCHBLTMODE SetStretchMode;
 
-  } else if (ReadUByte(FTell(), possible) == 0x16) {
+  } else if (recordType == EMR_SETTEXTALIGN) {
     EMRSETTEXTALIGN SetTextAlign;
 
-  } else if (ReadUByte(FTell(), possible) == 0x18) {
+  } else if (recordType == EMR_SETTEXTCOLOR) {
     EMRSETTEXTCOLOR SetTextColor;
 
-  } else if (ReadUByte(FTell(), possible) == 0x19) {
+  } else if (recordType == EMR_SETBKCOLOR) {
     EMRSETBKCOLOR SetBkColor;
 
-  } else if (ReadUByte(FTell(), possible) == 0x1a) {
+  } else if (recordType == EMR_OFFSETCLIPRGN) {
     EMROFFSETCLIPRGN OffsetClipRgn;
 
-  } else if (ReadUByte(FTell(), possible) == 0x1b) {
+  } else if (recordType == EMR_MOVETOEX) {
     EMRMOVETOEX MoveToEx;
 
-  } else if (ReadUByte(FTell(), possible) == 0x1d) {
+  } else if (recordType == EMR_EXCLUDECLIPRECT) {
     EMREXCLUDECLIPRECT ExcludeClipRect;
 
-  } else if (ReadUByte(FTell(), possible) == 0x1e) {
+  } else if (recordType == EMR_INTERSECTCLIPRECT) {
     EMRINTERSECTCLIPRECT InterSectClipRect;
 
-  } else if (ReadUByte(FTell(), possible) == 0x21) {
+  } else if (recordType == EMR_SAVEDC) {
     EMRSAVEDC SaveDC;
 
-  } else if (ReadUByte(FTell(), possible) == 0x22) {
+  } else if (recordType == EMR_RESTOREDC) {
     EMRRESTOREDC RestoreDC;
 
-  } else if (ReadUByte(FTell(), possible) == 0x23) {
+  } else if (recordType == EMR_SETWORLDTRANSFORM) {
     EMRSETWORLDTRANSFORM SetWorldTranform;
 
-  } else if (ReadUByte(FTell(), possible) == 0x25) {
+  } else if (recordType == EMR_SELECTOBJECT) {
     EMRSELECTOBJECT SelectObject;
 
-  } else if (ReadUByte(FTell(), possible) == 0x26) {
+  } else if (recordType == EMR_CREATEPEN) {
     EMRCREATEPEN CreatePen;
 
-  } else if (ReadUByte(FTell(), possible) == 0x27) {
+  } else if (recordType == EMR_CREATEBRUSHINDIRECT) {
     EMRCREATEBRUSHINDIRECT CreateBrushIndirect;
 
-  } else if (ReadUByte(FTell(), possible) == 0x28) {
+  } else if (recordType == EMR_DELETEOBJECT) {
     EMRDELETEOBJECT DeleteObject;
 
-  } else if (ReadUByte(FTell(), possible) == 0x29) {
+  } else if (recordType == EMR_ANGLEARC) {
     EMRANGLEARC AngleArc;
 
-  } else if (ReadUByte(FTell(), possible) == 0x2a) {
+  } else if (recordType == EMR_ELLIPSE) {
     EMRELLIPSE Ellipse;
 
-  } else if (ReadUByte(FTell(), possible) == 0x2b) {
+  } else if (recordType == EMR_RECTANGLE) {
     EMRRECTANGLE Rectangle;
 
-  } else if (ReadUByte(FTell(), possible) == 0x2c) {
+  } else if (recordType == EMR_ROUNDRECT) {
     EMRROUNDRECT RoundRect;
 
-  } else if (ReadUByte(FTell(), possible) == 0x2d) {
+  } else if (recordType == EMR_ARC) {
     EMRARC Arc;
 
-  } else if (ReadUByte(FTell(), possible) == 0x2e) {
+  } else if (recordType == EMR_CHORD) {
     EMRCHORD Chord;
 
-  } else if (ReadUByte(FTell(), possible) == 0x2f) {
+  } else if (recordType == EMR_PIE) {
     EMRPIE Pie;
 
-  } else if (ReadUByte(FTell(), possible) == 0x30) {
+  } else if (recordType == EMR_SELECTPALETTE) {
     EMRSELECTPALETTE SelectPalette;
 
-  } else if (ReadUByte(FTell(), possible) == 0x31) {
+  } else if (recordType == EMR_CREATEPALETTE) {
     EMRCREATEPALETTE CreatePalette;
 
-  } else if (ReadUByte(FTell(), possible) == 0x32) {
+  } else if (recordType == EMR_SETPALETTEENTRIES) {
     EMRSETPALETTEENTRIES SetPaletteEntries;
 
-  } else if (ReadUByte(FTell(), possible) == 0x33) {
+  } else if (recordType == EMR_RESIZEPALETTE) {
     EMRRESIZEPALETTE ResizePalette;
 
-  } else if (ReadUByte(FTell(), possible) == 0x34) {
+  } else if (recordType == EMR_REALIZEPALETTE) {
     EMRREALIZEPALETTE RealizePalette;
 
-  } else if (ReadUByte(FTell(), possible) == 0x35) {
+  } else if (recordType == EMR_EXTFLOODFILL) {
     EMREXTFLOODFILL ExtFloodFill;
 
-  } else if (ReadUByte(FTell(), possible) == 0x36) {
+  } else if (recordType == EMR_LINETO) {
     EMRLINETO LineTo;
 
-  } else if (ReadUByte(FTell(), possible) == 0x37) {
+  } else if (recordType == EMR_ARCTO) {
     EMRARCTO ArcTo;
 
-  } else if (ReadUByte(FTell(), possible) == 0x38) {
+  } else if (recordType == EMR_POLYDRAW) {
     EMRPOLYDRAW PolyDraw;
 
-  } else if (ReadUByte(FTell(), possible) == 0x3a) {
+  } else if (recordType == EMR_SETMITERLIMIT) {
     EMRSETMITERLIMIT SetMiterLimit;
 
-  } else if (ReadUByte(FTell(), possible) == 0x3b) {
+  } else if (recordType == EMR_BEGINPATH) {
     EMRBEGINPATH BeginPath;
 
-  } else if (ReadUByte(FTell(), possible) == 0x3c) {
+  } else if (recordType == EMR_ENDPATH) {
     EMRENDPATH EndPath;
 
-  } else if (ReadUByte(FTell(), possible) == 0x3d) {
+  } else if (recordType == EMR_CLOSEFIGURE) {
     EMRCLOSEFIGURE CloseFigure;
 
-  } else if (ReadUByte(FTell(), possible) == 0x3e) {
+  } else if (recordType == EMR_FILLPATH) {
     EMRFILLPATH FillPath;
 
-  } else if (ReadUByte(FTell(), possible) == 0x3f) {
+  } else if (recordType == EMR_STROKEANDFILLPATH) {
     EMRSTROKEANDFILLPATH FillPath;
 
-  } else if (ReadUByte(FTell(), possible) == 0x40) {
+  } else if (recordType == EMR_STROKEPATH) {
     EMRSTROKEPATH StrokePath;
 
-  } else if (ReadUByte(FTell(), possible) == 0x41) {
+  } else if (recordType == EMR_FLATTENPATH) {
     EMRFLATTENPATH FlattenPath;
 
-  } else if (ReadUByte(FTell(), possible) == 0x42) {
+  } else if (recordType == EMR_WIDENPATH) {
     EMRWIDENPATH WidenPath;
 
-  } else if (ReadUByte(FTell(), possible) == 0x43) {
+  } else if (recordType == EMR_SELECTCLIPPATH) {
     EMRSELECTCLIPPATH SelectClipPath;
 
-  } else if (ReadUByte(FTell(), possible) == 0x44) {
+  } else if (recordType == EMR_ABORTPATH) {
     EMRABORTPATH AbortPath;
 
-  } else if (ReadUByte(FTell(), possible) == 0x46) {
+  } else if (recordType == EMR_COMMENT) {
     EMRCOMMENT Comment;
 
-  } else if (ReadUByte(FTell(), possible) == 0x47) {
+  } else if (recordType == EMR_FILLRGN) {
     EMRFILLRGN FillRgn;
 
-  } else if (ReadUByte(FTell(), possible) == 0x48) {
+  } else if (recordType == EMR_FRAMERGN) {
     EMRFRAMERGN FrameRgn;
 
-  } else if (ReadUByte(FTell(), possible) == 0x4a) {
+  } else if (recordType == EMR_PAINTRGN) {
     EMRPAINTRGN PaintRgn;
 
-  } else if (ReadUByte(FTell(), possible) == 0x4b) {
+  } else if (recordType == EMR_EXTSELECTCLIPRGN) {
     EMREXTSELECTCLIPRGN ExtSelectClipRgn;
 
-  } else if (ReadUByte(FTell(), possible) == 0x4c) {
+  } else if (recordType == EMR_BITBLT) {
     EMRBITBLT BitBlt;
 
-  } else if (ReadUByte(FTell(), possible) == 0x4d) {
+  } else if (recordType == EMR_STRETCHBLT) {
     EMRSTRETCHBLT StretchBlt;
 
-  } else if (ReadUByte(FTell(), possible) == 0x4e) {
+  } else if (recordType == EMR_MASKBLT) {
     EMRMASKBLT MaskBlt;
 
-  } else if (ReadUByte(FTell(), possible) == 0x4f) {
+  } else if (recordType == EMR_PLGBLT) {
     EMRPLGBLT PlgBlt;
 
-  } else if (ReadUByte(FTell(), possible) == 0x50) {
+  } else if (recordType == EMR_SETDIBITSTODEVICE) {
     EMRSETDIBITSTODEVICE SetDiBitsToDevice;
 
-  } else if (ReadUByte(FTell(), possible) == 0x51) {
+  } else if (recordType == EMR_STRETCHDIBITS) {
     EMRSTRETCHDIBITS StretchDIBits;
 
-  } else if (ReadUByte(FTell(), possible) == 0x53) {
+  } else if (recordType == EMR_EXTTEXTOUTA) {
     EMREXTTEXTOUTA ExtTextOutA;
 
-  } else if (ReadUByte(FTell(), possible) == 0x54) {
+  } else if (recordType == EMR_EXTTEXTOUTW) {
     EMREXTTEXTOUTW ExtTextOutW;
 
-  } else if (ReadUByte(FTell(), possible) == 0x55) {
+  } else if (recordType == EMR_POLYBEZIER16) {
     EMRPOLYBEZIER16 PolyBezier16;
 
-  } else if (ReadUByte(FTell(), possible) == 0x5d) {
+  } else if (recordType == EMR_CREATEMONOBRUSH) {
     EMRCREATEMONOBRUSH CreateMonoBrush;
 
-  } else if (ReadUByte(FTell(), possible) == 0x5e) {
+  } else if (recordType == EMR_CREATEDIBPATTERNBRUSHPT) {
     EMRCREATEDIBPATTERNBRUSHPT CreateDIBPatternBrushPt;
 
-  } else if (ReadUByte(FTell(), possible) == 0x5f) {
+  } else if (recordType == EMR_EXTCREATEPEN) {
     EMREXTCREATEPEN CreatePenEx;
 
-  } else if (ReadUByte(FTell(), possible) == 0x60) {
+  } else if (recordType == EMR_POLYTEXTOUTA) {
     EMRPOLYTEXTOUTA PolyTextOutA;
 
-  } else if (ReadUByte(FTell(), possible) == 0x63) {
+  } else if (recordType == EMR_CREATECOLORSPACE) {
     EMRCREATECOLORSPACE CreateColorSpace;
 
-  } else if (ReadUByte(FTell(), possible) == 0x64) {
+  } else if (recordType == EMR_SETCOLORSPACE) {
     EMRSETCOLORSPACE SetColorSpace;
 
-  } else if (ReadUByte(FTell(), possible) == 0x65) {
+  } else if (recordType == EMR_DELETECOLORSPACE) {
     EMRDELETECOLORSPACE DeleteColorSpace;
 
-  } else if (ReadUByte(FTell(), possible) == 0x66) {
+  } else if (recordType == EMR_GLSRECORD) {
     EMRGLSRECORD GlsRecord;
 
-  } else if (ReadUByte(FTell(), possible) == 0x67) {
+  } else if (recordType == EMR_GLSBOUNDEDRECORD) {
     EMRGLSBOUNDEDRECORD GlsBoundedRecord;
 
-  } else if (ReadUByte(FTell(), possible) == 0x69) {
+  } else if (recordType == EMR_DRAWESCAPE) {
     EMRDRAWESCAPE DrawEscape;
 
-  } else if (ReadUByte(FTell(), possible) == 0x6a) {
+  } else if (recordType == EMR_EXTESCAPE) {
     EMREXTESCAPE ExtEscape;
 
-  } else if (ReadUByte(FTell(), possible) == 0x6b) {
-    EMRRESERVED107 Reserved;
 
-  } else if (ReadUByte(FTell(), possible) == 0x6e) {
+  } else if (recordType == EMR_NAMEDESCAPE) {
     EMRNAMEDESCAPE NamedEscape;
 
-  } else if (ReadUByte(FTell(), possible) == 0x6f) {
+  } else if (recordType == EMR_COLORCORRECTPALETTE) {
     EMRCOLORCORRECTPALETTE ColorCorrectPalette;
 
-  //} else if (ReadUByte(FTell(), possible) == 0x7A) {
+  //} else if (recordType == 0x7A) {
   //  EMRCREATECOLORSPACEW CreateColorSpaceW;
 
-  } else if (ReadUByte(FTell(), possible) == 0x72) {
+  } else if (recordType == EMR_ALPHABLEND) {
     EMRALPHABLEND AlphaBlend;
 
-  } else if (ReadUByte(FTell(), possible) == 0x74) {
+  } else if (recordType == EMR_TRANSPARENTBLT) {
     EMRTRANSPARENTBLT TransparentBlt;
 
-  } else if (ReadUByte(FTell(), possible) == 0x75) {
-    EMRRESERVED117 Reserved;
 
-  } else if (ReadUByte(FTell(), possible) == 0x76) {
+  } else if (recordType == EMR_GRADIENTFILL) {
     EMRGRADIENTFILL GradientFill;
   }
 
