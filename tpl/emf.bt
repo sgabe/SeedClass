@@ -2217,7 +2217,7 @@ typedef struct tagEMRSETWORLDTRANSFORM {
 
 //------------------------------------------------
 
-local UBYTE supportedRecordTypes[] = {
+local DWORD supportedRecordTypes[] = {
   EMR_POLYBEZIER,
   EMR_POLYGON,
   EMR_POLYLINE,
@@ -2297,9 +2297,9 @@ FSeek(EmfHeader.nSize);
 
 local uint recCnt = 0;
 for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
-  UBYTE generatedRecordType <values=supportedRecordTypes>;
-  FSkip(-1);
-  local UBYTE recordType = ReadUByte(FTell(), supportedRecordTypes);
+  DWORD generatedRecordType <values=supportedRecordTypes>;
+  FSkip(-4);
+  local DWORD recordType = ReadUInt(FTell(), supportedRecordTypes);
 
   if (recordType == EMR_POLYBEZIER) {
     EMRPOLYBEZIER PolyBezier;
