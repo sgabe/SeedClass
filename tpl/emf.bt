@@ -1118,7 +1118,7 @@ typedef struct tagEMREXTSELECTCLIPRGN {
  */
 typedef struct tagEMRINTERSECTCLIPRECT {
   DWORD iType = { 0x0000001E };
-  DWORD nSize = { 0x00000014 };
+  DWORD nSize = { 0x00000018 };
   RECTL rclClip;
 } EMRINTERSECTCLIPRECT;
 
@@ -1137,7 +1137,7 @@ typedef struct tagEMROFFSETCLIPRGN {
  */
 typedef struct tagEMRSELECTCLIPPATH {
   DWORD iType = { 0x00000043 };
-  DWORD nSize = { 0x00000010 };
+  DWORD nSize = { 0x0000000C };
   RegionMode iRegionMode;
 } EMRSELECTCLIPPATH;
 
