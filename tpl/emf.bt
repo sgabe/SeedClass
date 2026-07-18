@@ -1184,15 +1184,9 @@ typedef struct tagEMRCOMMENTEMFPLUS_EOF {
  */
 typedef struct {
   DWORD iType = { 0x0000000E };    // Record type is EMR_EOF.
-  DWORD	nSize = { 0x00000014 };    // Record size in bytes.
+  DWORD nSize = { 0x00000014 };    // Record size in bytes.
   DWORD nPalEntries = { 0 };       // Number of palette entries.
   DWORD offPalEntries = { 0 };     // Offset to the palette entries from the start of this record.
-
-  local uint palCnt = 0;
-  for ( palCnt = 0; palCnt < nPalEntries; palCnt++ ) {
-    LOGPALETTEENTRY palEntry;      // PaletteEntry objects that specifies the palette data.
-  }
-
   DWORD SizeLast = { 0x00000014 }; // MUST be the same as Size and MUST be the last field of the record and hence the metafile.
 } EMREOF;
 
