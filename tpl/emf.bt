@@ -631,7 +631,7 @@ typedef struct tagREGIONDATAHEADER {
  */
 typedef struct tagREGIONDATA {
   REGIONDATAHEADER rgnDataHeader;
-  RECTL data[1];
+  RECTL data[rgnDataHeader.cntRects];
 } REGIONDATA;
 
 /** 2.2.27 UniversalFontId Object
@@ -1106,10 +1106,10 @@ typedef struct tagEMREXCLUDECLIPRECT {
  */
 typedef struct tagEMREXTSELECTCLIPRGN {
   DWORD iType = { 0x0000004B };
-  DWORD nSize = { 0x00000014 };
-  DWORD rgnDataSize = { 0x00000001 };
-  DWORD rgnMode;
-  REGIONDATA rgnData[rgnDataSize];
+  DWORD nSize = { 0x00000040 };
+  DWORD rgnDataSize = { 0x00000030 };
+  RegionMode rgnMode;
+  REGIONDATA rgnData;
 } EMREXTSELECTCLIPRGN;
 
 /** 2.3.2.3 EMR_INTERSECTCLIPRECT Record
@@ -2056,10 +2056,10 @@ typedef struct tagEMRFORCEUFIMAPPING {
  */
 typedef struct tagEMRINVERTRGN {
   DWORD iType = { 0x00000049 };
-  DWORD	nSize = { 0x0000001c };
+  DWORD nSize = { 0x0000004C };
   RECTL rclBounds;
-  DWORD nRgnDataSize;
-  BYTE rgnData[nRgnDataSize];
+  DWORD rgnDataSize = { 0x00000030 };
+  REGIONDATA rgnData;
 } EMRINVERTRGN;
 
 /** 11.4 EMR_MOVETOEX Record
@@ -2260,7 +2260,9 @@ local UBYTE supportedRecordTypes[] = {
   EMR_LINETO,
   EMR_ARCTO,
   EMR_COMMENT,
+  EMR_INVERTRGN,
   EMR_PAINTRGN,
+  EMR_EXTSELECTCLIPRGN,
   EMR_DRAWESCAPE,
   EMR_EXTESCAPE
 };
@@ -2479,6 +2481,9 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
 
   } else if (recordType == EMR_FRAMERGN) {
     EMRFRAMERGN FrameRgn;
+
+  } else if (recordType == EMR_INVERTRGN) {
+    EMRINVERTRGN InvertRgn;
 
   } else if (recordType == EMR_PAINTRGN) {
     EMRPAINTRGN PaintRgn;
