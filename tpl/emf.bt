@@ -4,12 +4,13 @@
 //      File: EMF.bt
 //   Authors: Gabor Seljan
 //    E-mail: gabor@seljan.hu
-//   Version: 0.4
+//   Version: 0.5
 //   Purpose: Enhanced Metafile Format (EMF) template.
 //  Category: Image
 // File Mask: *.emf
 //  ID Bytes: 01 00 00 00
 //   History:
+//   0.5   2026-07-18 G Seljan: Validity and maintainability improvements.
 //   0.4   2025-06-29 G Seljan: Updated version.
 //   0.3   2025-02-08 G Seljan: Updated version.
 //   0.2   2024-01-26 G Seljan: Updated version.
@@ -525,8 +526,8 @@ typedef struct tagEMRTEXTA {
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/93ba94f7-84fc-4dd5-8c94-3d476aa7588b
  */
 typedef struct _GRADIENT_RECT {
-  ULONG UpperLeft;
-  ULONG LowerRight;
+  ULONG UpperLeft = { 0 };
+  ULONG LowerRight = { 1 };
 } GRADIENT_RECT;
 
 /** 2.2.10 HeaderExtension1 Object
@@ -1407,13 +1408,14 @@ typedef struct tagEMRFRAMERGN {
  */
 typedef struct tagEMRGRADIENTFILL {
   DWORD iType = { 0x00000076 };
-  DWORD	nSize = { 0x00000024 };
+  DWORD nSize = { 0x00000050 };
   RECTL rclBounds;
-  DWORD nVer;
-  DWORD nTri;
-  ULONG ulMode;
-  TRIVERTEX nVer[1];
-  GRADIENT_RECT nTri[1];
+  DWORD nVer = { 2 };
+  DWORD nTri = { 1 };
+  GradientFill ulMode = { GRADIENT_FILL_RECT_H, GRADIENT_FILL_RECT_V };
+  TRIVERTEX vertices[nVer];
+  GRADIENT_RECT rectangles[nTri];
+  DWORD vertexPadding[nTri];
 } EMRGRADIENTFILL;
 
 /** 2.3.5.13 EMR_LINETO
@@ -1452,9 +1454,9 @@ typedef struct tagEMRPIE {
  */
 typedef struct tagEMRPOLYBEZIER {
   DWORD iType = { 0x00000002 };
-  DWORD	nSize = { 0x00000024 };
+  DWORD nSize = { 0x0000003C };
   RECTL rclBounds;
-  DWORD cntPoints <min=1, max=1>;
+  DWORD cntPoints = { 4 };
   POINTL aPoints[cntPoints];
 } EMRPOLYBEZIER;
 
@@ -1463,9 +1465,9 @@ typedef struct tagEMRPOLYBEZIER {
  */
 typedef struct tagEMRPOLYBEZIER16 {
   DWORD iType = { 0x00000055 };
-  DWORD nSize = { 0x00000020 };
+  DWORD nSize = { 0x0000002C };
   RECTL rclBounds;
-  DWORD cntPoints <min=1, max=1>;
+  DWORD cntPoints = { 4 };
   POINTS aPoints[cntPoints];
 } EMRPOLYBEZIER16;
 
@@ -1474,9 +1476,9 @@ typedef struct tagEMRPOLYBEZIER16 {
  */
 typedef struct tagEMRPOLYBEZIERTO {
   DWORD iType = { 0x00000005 };
-  DWORD	nSize = { 0x00000024 };
+  DWORD nSize = { 0x00000034 };
   RECTL rclBounds;
-  DWORD cntPoints <min=1, max=1>;
+  DWORD cntPoints = { 3 };
   POINTL aPoints[cntPoints];
 } EMRPOLYBEZIERTO;
 
@@ -1485,9 +1487,9 @@ typedef struct tagEMRPOLYBEZIERTO {
  */
 typedef struct tagEMRPOLYBEZIERTO16 {
   DWORD iType = { 0x00000058 };
-  DWORD nSize = { 0x00000020 };
+  DWORD nSize = { 0x00000028 };
   RECTL rclBounds;
-  DWORD cntPoints <min=1, max=1>;
+  DWORD cntPoints = { 3 };
   POINTS aPoints[cntPoints];
 } EMRPOLYBEZIERTO16;
 
@@ -1508,9 +1510,9 @@ typedef struct tagEMRPOLYDRAW {
  */
 typedef struct tagEMRPOLYGON {
   DWORD iType = { 0x00000003 };
-  DWORD	nSize = { 0x00000024 };
+  DWORD nSize = { 0x00000034 };
   RECTL rclBounds;
-  DWORD cntPoints <min=1, max=1>;
+  DWORD cntPoints = { 3 };
   POINT aPoints[cntPoints];
 } EMRPOLYGON;
 
@@ -1519,9 +1521,9 @@ typedef struct tagEMRPOLYGON {
  */
 typedef struct tagEMRPOLYGON16 {
   DWORD iType = { 0x00000056 };
-  DWORD	nSize = { 0x00000020 };
+  DWORD nSize = { 0x00000028 };
   RECTL rclBounds;
-  DWORD cntPoints< min=1, max=1>;
+  DWORD cntPoints = { 3 };
   POINTS aPoints[cntPoints];
 } EMRPOLYGON16;
 
@@ -1541,9 +1543,9 @@ typedef struct tagEMRPOLYLINE {
  */
 typedef struct tagEMRPOLYLINE16 {
   DWORD iType = { 0x00000057 };
-  DWORD	nSize = { 0x00000020 };
+  DWORD nSize = { 0x00000024 };
   RECTL rclBounds;
-  DWORD cntPoints <min=1, max=1>;
+  DWORD cntPoints = { 2 };
   POINTS aPoints[cntPoints];
 } EMRPOLYLINE16;
 
@@ -2220,14 +2222,12 @@ typedef struct tagEMRSETWORLDTRANSFORM {
 
 
 //------------------------------------------------
-// 13. Reserved Record Types
-//------------------------------------------------
-
-
-//------------------------------------------------
 
 local UBYTE supportedRecordTypes[] = {
+  EMR_POLYBEZIER,
+  EMR_POLYGON,
   EMR_POLYLINE,
+  EMR_POLYBEZIERTO,
   EMR_POLYLINETO,
   EMR_POLYPOLYLINE,
   EMR_POLYPOLYGON,
@@ -2258,13 +2258,18 @@ local UBYTE supportedRecordTypes[] = {
   EMR_REALIZEPALETTE,
   EMR_EXTFLOODFILL,
   EMR_LINETO,
+  EMR_POLYBEZIER16,
+  EMR_POLYGON16,
+  EMR_POLYLINE16,
+  EMR_POLYBEZIERTO16,
   EMR_ARCTO,
   EMR_COMMENT,
   EMR_INVERTRGN,
   EMR_PAINTRGN,
   EMR_EXTSELECTCLIPRGN,
   EMR_DRAWESCAPE,
-  EMR_EXTESCAPE
+  EMR_EXTESCAPE,
+  EMR_GRADIENTFILL
 };
 
 LittleEndian();
@@ -2517,6 +2522,15 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
 
   } else if (recordType == EMR_POLYBEZIER16) {
     EMRPOLYBEZIER16 PolyBezier16;
+
+  } else if (recordType == EMR_POLYGON16) {
+    EMRPOLYGON16 Polygon16;
+
+  } else if (recordType == EMR_POLYLINE16) {
+    EMRPOLYLINE16 Polyline16;
+
+  } else if (recordType == EMR_POLYBEZIERTO16) {
+    EMRPOLYBEZIERTO16 PolyBezierTo16;
 
   } else if (recordType == EMR_CREATEMONOBRUSH) {
     EMRCREATEMONOBRUSH CreateMonoBrush;
