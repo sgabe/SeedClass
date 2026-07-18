@@ -536,7 +536,7 @@ typedef struct {
   DWORD cbPixelFormat  = { 0 };
   DWORD offPixelFormat = { 0 };
   DWORD bOpenGL        = { 0 };
-} HeaderExtension1; // Size is 0x64
+} HeaderExtension1; // Extends the header from 88 to 100 bytes.
 
 /** 2.2.11 HeaderExtension2 Object
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/9e96e5cf-e949-49ae-baa8-3fffd948e588
@@ -544,7 +544,7 @@ typedef struct {
 typedef struct {
   DWORD MicrometersX = { 0x000A55D5 }; // or szlMillimeters.cx * 1000
   DWORD MicrometersY = { 0x000675A5 };
-} HeaderExtension2; // Size is 0x6
+} HeaderExtension2; // Extends the header from 100 to 108 bytes.
 
 /** 2.2.12 LogBrushEx Object
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/6d790f8d-5165-4746-bac3-3443915c2071
@@ -599,12 +599,6 @@ typedef struct _TRIVERTEX {
   WORD Alpha;
 } TRIVERTEX;
 
-typedef struct {
-  if (EmfHeader.nDescription > 0) {
-    WORD desc[EmfHeader.nDescription - 1];
-    WORD terminator = { 0 };
-  }
-} EMRDESCRIPTION;
 
 // https://docs.microsoft.com/en-us/previous-versions/ms911013(v=msdn.10)
 typedef struct tagRGBQUAD {
@@ -1204,14 +1198,14 @@ typedef struct tagSIZEL_MILLIMETERS {
  */
 typedef struct {
   DWORD iType = { 0x00000001 };                        // Record type EMR_HEADER.
-  DWORD nSize;                                         // Record size in bytes.
+  DWORD nSize = { 0x0000006C };                        // Extension 2 header size: 108 bytes.
   RECTL rclBounds;                                     // Inclusive-inclusive bounds in device units.
   RECTL rclFrame;                                      // Inclusive-inclusive picture frame of metafile in .01 mm units.
   DWORD dSignature = { 0x464D4520 };                   // EMF
   DWORD nVersion = { 0x00010000 };
-  DWORD nBytes;                                        // Size of the metafile in bytes.
-  DWORD nRecords <min=4, max=8>;                       // Number of records in the metafile.
-  WORD  nHandles = { 0x0010 };                         // Number of handles in the handle table.
+  DWORD nBytes = { 0 };                                // Patched with the final metafile size.
+  DWORD nRecords <min=3, max=16>;                      // Header + at least one body record + EOF.
+  WORD  nHandles = { 0x0001 };                         // Handle table contains reserved index zero only.
   WORD  sReserved = { 0 };
   DWORD nDescription = { 0 };                          // Number of chars in the unicode description string.
   DWORD offDescription = { 0 };                        // Offset to the metafile description record.
@@ -1223,7 +1217,8 @@ typedef struct {
 } EMRHEADER;
 
 typedef struct {
-  WORD desc[EmfHeader.nDescription];
+  WORD desc[EmfHeader.nDescription - 1];
+  WORD terminator = { 0 };
 } EMRDESCRIPTION;
 
 
@@ -2247,23 +2242,21 @@ LittleEndian();
 // Add EMF_HEADER record.
 EMRHEADER EmfHeader;
 
-// Fix the nSize member of the EMF_HEADER record.
-FSeek(4);
-local uint headerSize = 0x6c + (EmfHeader.nDescription * 0x2);
-EmfHeader.nSize = headerSize;
-DWORD nSize = { headerSize };
-
 // Check for EMF signature.
 if (EmfHeader.dSignature != 0x464D4520) {
   Warning( "File is not an enhanced metafile. Template stopped." );
   return -1;
 }
 
-// Add optional description record.
+// Add the optional UTF-16LE description when both header fields are present.
+if ((EmfHeader.nDescription == 0) != (EmfHeader.offDescription == 0)) {
+  Warning( "Description count and offset must either both be zero or both be nonzero." );
+  return -1;
+}
 if (EmfHeader.nDescription && EmfHeader.offDescription) {
-  // Check description size.
-  if (EmfHeader.nDescription % 4 != 0) { // The total size of the record must be a multiple of 4 bytes.
-    Warning( "Description size is invalid. Template stopped." );
+  if (EmfHeader.offDescription < 0x0000006C ||
+      EmfHeader.offDescription + EmfHeader.nDescription * 2 > EmfHeader.nSize) {
+    Warning( "Description range is outside the EMR_HEADER record." );
     return -1;
   }
   FSeek(EmfHeader.offDescription);
