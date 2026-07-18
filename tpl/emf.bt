@@ -652,6 +652,10 @@ string ReadRGBQUAD( RGBQUAD &a ) {
   return s;
 }
 
+uint Align4( uint value ) {
+  return (value + 3) & ~3;
+}
+
 uint SetSize( uint emrSize, uint bmiSize, uint biBitCount, uint biCompression ) {
   local uint nSize = 0;
 
@@ -1143,10 +1147,18 @@ typedef struct tagEMRSELECTCLIPPATH {
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/4a26bcf8-6607-4a09-8ec3-a8768eadc8e8
 typedef struct tagEMRCOMMENT {
+  local uint recordOffset = FTell();
+
   DWORD iType = { 0x00000046 };
-  DWORD nSize = { 0x0000000c };
-  DWORD dataSize <max=2>;
+  DWORD nSize = { 0x0000000C };
+  DWORD dataSize <max=3>;
   BYTE privateData[dataSize];
+  BYTE alignmentPadding[Align4(dataSize) - dataSize];
+
+  local uint recordEnd = FTell();
+  FSeek(recordOffset + 4);
+  DWORD nSize = { Align4(0x0000000C + dataSize) };
+  FSeek(recordEnd);
 } EMRCOMMENT;
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/929b78e1-b848-44a5-9fac-327cae5c2ae5
@@ -1928,12 +1940,19 @@ typedef struct tagEMRSETCOLORSPACE {
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/88348296-3c9a-488f-bbf7-19c897535372
  */
 typedef struct tagEMRSETPALETTEENTRIES {
+  local uint recordOffset = FTell();
+
   DWORD iType = { 0x00000032 };
-  DWORD	nSize = { 0x00000014 };
+  DWORD nSize = { 0x00000014 };
   DWORD ihPal;
   DWORD iStart;
   DWORD cEntries <max=2>;
   LOGPALETTEENTRY aPalEntries[cEntries];
+
+  local uint recordEnd = FTell();
+  FSeek(recordOffset + 4);
+  DWORD nSize = { 0x00000014 + cEntries * 4 };
+  FSeek(recordEnd);
 } EMRSETPALETTEENTRIES;
 
 
@@ -2006,13 +2025,21 @@ typedef struct tagEMRABORTPATH {
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/b9e3e8fa-1d07-4475-b0f2-d157eeca5417
  */
 typedef struct tagEMRCOLORMATCHTOTARGETW {
+  local uint recordOffset = FTell();
+
   DWORD iType = { 0x00000079 };
-  DWORD	nSize = { 0x00000018 };
+  DWORD nSize = { 0x00000018 };
   ColorSpace dwAction;
   ColorMatchToTarget dwFlags;
-  DWORD cbName;
-  DWORD cbData;
+  DWORD cbName <max=32>;
+  DWORD cbData <max=32>;
   BYTE data[cbName + cbData];
+  BYTE alignmentPadding[Align4(cbName + cbData) - (cbName + cbData)];
+
+  local uint recordEnd = FTell();
+  FSeek(recordOffset + 4);
+  DWORD nSize = { Align4(0x00000018 + cbName + cbData) };
+  FSeek(recordEnd);
 } EMRCOLORMATCHTOTARGETW;
 
 /** 11.2 EMR_FORCEUFIMAPPING Record
@@ -2232,6 +2259,7 @@ local UBYTE supportedRecordTypes[] = {
   EMR_EXTFLOODFILL,
   EMR_LINETO,
   EMR_ARCTO,
+  EMR_COMMENT,
   EMR_PAINTRGN,
   EMR_DRAWESCAPE,
   EMR_EXTESCAPE
