@@ -1860,6 +1860,34 @@ typedef struct tagEMRPOLYDRAW {
   FSeek(recordEnd);
 } EMRPOLYDRAW;
 
+/** 2.3.5.21 EMR_POLYDRAW16 Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/57f0cfe7-2139-4199-b6ad-61fb61a1d4ec
+ */
+typedef struct tagEMRPOLYDRAW16 {
+  local int64 recordStart = FTell();
+  DWORD iType = { 0x0000005C };
+  DWORD nSize;
+  RECTL rclBounds;
+  local int previousCountEvilState = SetEvilBit(false);
+  DWORD cntPoints = { 1 };
+  SetEvilBit(previousCountEvilState);
+  POINTS aPoints[cntPoints];
+  local int previousTypeEvilState = SetEvilBit(false);
+  BYTE abTypes = { 0x06 }; // PT_MOVETO for the single generated point.
+  SetEvilBit(previousTypeEvilState);
+
+  local int64 recordSize = FTell() - recordStart;
+  local uint paddingSize = Align4(recordSize) - recordSize;
+  BYTE EmrAlignmentPadding[paddingSize];
+  local int64 recordEnd = FTell();
+  AssertValidEmfRecordSize(recordEnd - recordStart);
+  FSeek(recordStart + 4);
+  local int previousEvilState = SetEvilBit(false);
+  DWORD nSize = { (DWORD)(recordEnd - recordStart) };
+  SetEvilBit(previousEvilState);
+  FSeek(recordEnd);
+} EMRPOLYDRAW16;
+
 /** 2.3.5.22 EMR_POLYGON Record
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/eb916781-58b6-4e92-b606-68071aa65733
  */
@@ -1975,6 +2003,31 @@ typedef struct tagEMRPOLYLINETO {
   FSeek(recordEnd);
 } EMRPOLYLINETO;
 
+/** 2.3.5.27 EMR_POLYLINETO16 Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/0d5a4710-25f9-43be-bb08-3e38a4db1249
+ */
+typedef struct tagEMRPOLYLINETO16 {
+  local int64 recordStart = FTell();
+  DWORD iType = { 0x00000059 };
+  DWORD nSize;
+  RECTL rclBounds;
+  local int previousCountEvilState = SetEvilBit(false);
+  DWORD cntPoints = { 2 };
+  SetEvilBit(previousCountEvilState);
+  POINTS aPoints[cntPoints];
+
+  local int64 recordSize = FTell() - recordStart;
+  local uint paddingSize = Align4(recordSize) - recordSize;
+  BYTE EmrAlignmentPadding[paddingSize];
+  local int64 recordEnd = FTell();
+  AssertValidEmfRecordSize(recordEnd - recordStart);
+  FSeek(recordStart + 4);
+  local int previousEvilState = SetEvilBit(false);
+  DWORD nSize = { (DWORD)(recordEnd - recordStart) };
+  SetEvilBit(previousEvilState);
+  FSeek(recordEnd);
+} EMRPOLYLINETO16;
+
 /** 2.3.5.28 EMR_POLYPOLYGON Record
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/c60ff127-2711-42d3-85d4-502ca2e4caef
  */
@@ -2000,6 +2053,33 @@ typedef struct tagEMRPOLYPOLYGON {
   FSeek(recordEnd);
 } EMRPOLYPOLYGON;
 
+/** 2.3.5.29 EMR_POLYPOLYGON16 Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/96ad447f-25d6-4272-8d18-51b395e669c6
+ */
+typedef struct tagEMRPOLYPOLYGON16 {
+  local int64 recordStart = FTell();
+  DWORD iType = { 0x0000005B };
+  DWORD nSize;
+  RECTL rclBounds;
+  local int previousCountEvilState = SetEvilBit(false);
+  DWORD nPolys = { 1 };
+  DWORD cntPoints = { 3 };
+  DWORD aPolyCounts = { 3 };
+  SetEvilBit(previousCountEvilState);
+  POINTS aPoints[cntPoints];
+
+  local int64 recordSize = FTell() - recordStart;
+  local uint paddingSize = Align4(recordSize) - recordSize;
+  BYTE EmrAlignmentPadding[paddingSize];
+  local int64 recordEnd = FTell();
+  AssertValidEmfRecordSize(recordEnd - recordStart);
+  FSeek(recordStart + 4);
+  local int previousEvilState = SetEvilBit(false);
+  DWORD nSize = { (DWORD)(recordEnd - recordStart) };
+  SetEvilBit(previousEvilState);
+  FSeek(recordEnd);
+} EMRPOLYPOLYGON16;
+
 /** 2.3.5.30 EMR_POLYPOLYLINE Record
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/e23f75fd-3af6-49f3-8c86-ef121ff61701
  */
@@ -2024,6 +2104,33 @@ typedef struct tagEMRPOLYPOLYLINE {
   SetEvilBit(previousEvilState);
   FSeek(recordEnd);
 } EMRPOLYPOLYLINE;
+
+/** 2.3.5.31 EMR_POLYPOLYLINE16 Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/a8b4cdfd-5039-4a56-b7cb-9458f819f23f
+ */
+typedef struct tagEMRPOLYPOLYLINE16 {
+  local int64 recordStart = FTell();
+  DWORD iType = { 0x0000005A };
+  DWORD nSize;
+  RECTL rclBounds;
+  local int previousCountEvilState = SetEvilBit(false);
+  DWORD nPolys = { 1 };
+  DWORD cntPoints = { 2 };
+  DWORD aPolyCounts = { 2 };
+  SetEvilBit(previousCountEvilState);
+  POINTS aPoints[cntPoints];
+
+  local int64 recordSize = FTell() - recordStart;
+  local uint paddingSize = Align4(recordSize) - recordSize;
+  BYTE EmrAlignmentPadding[paddingSize];
+  local int64 recordEnd = FTell();
+  AssertValidEmfRecordSize(recordEnd - recordStart);
+  FSeek(recordStart + 4);
+  local int previousEvilState = SetEvilBit(false);
+  DWORD nSize = { (DWORD)(recordEnd - recordStart) };
+  SetEvilBit(previousEvilState);
+  FSeek(recordEnd);
+} EMRPOLYPOLYLINE16;
 
 /** 2.3.5.32 EMR_POLYTEXTOUTA
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/d8b7ac21-76b8-4f9a-a7cc-05f9d2d5627e
@@ -3306,6 +3413,10 @@ local DWORD supportedRecordTypes[] = {
   EMR_POLYGON16,
   EMR_POLYLINE16,
   EMR_POLYBEZIERTO16,
+  EMR_POLYLINETO16,
+  EMR_POLYPOLYLINE16,
+  EMR_POLYPOLYGON16,
+  EMR_POLYDRAW16,
   EMR_ARCTO,
   EMR_COMMENT,
   EMR_INVERTRGN,
@@ -3614,6 +3725,18 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
 
   } else if (recordType == EMR_POLYBEZIERTO16) {
     EMRPOLYBEZIERTO16 PolyBezierTo16;
+
+  } else if (recordType == EMR_POLYLINETO16) {
+    EMRPOLYLINETO16 PolylineTo16;
+
+  } else if (recordType == EMR_POLYPOLYLINE16) {
+    EMRPOLYPOLYLINE16 PolyPolyline16;
+
+  } else if (recordType == EMR_POLYPOLYGON16) {
+    EMRPOLYPOLYGON16 PolyPolygon16;
+
+  } else if (recordType == EMR_POLYDRAW16) {
+    EMRPOLYDRAW16 PolyDraw16;
 
   } else if (recordType == EMR_CREATEMONOBRUSH) {
     EMRCREATEMONOBRUSH CreateMonoBrush;
