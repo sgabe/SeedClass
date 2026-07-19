@@ -388,6 +388,14 @@ typedef enum <DWORD> {
   EMR_CREATECOLORSPACEW = 0x0000007A
 } RecordType;
 
+/** 2.1.2 ArcDirection Enumeration
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/9886c62f-1788-4118-894a-76d5a8733685
+ */
+typedef enum <DWORD> {
+  AD_COUNTERCLOCKWISE = 0x00000001,
+  AD_CLOCKWISE        = 0x00000002
+} ArcDirection;
+
 /** 2.1.4 BackgroundMode Enumeration
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/2f57054c-2b69-4303-a6f8-5aacd401f759
  */
@@ -444,6 +452,16 @@ typedef enum <DWORD> {
    MM_ISOTROPIC   = 0x00000007,
    MM_ANISOTROPIC = 0x00000008
 } MapMode;
+
+/** 2.1.24 ModifyWorldTransformMode Enumeration
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/e6bb2996-195f-473f-80c6-9dc1afe474f9
+ */
+typedef enum <DWORD> {
+  MWT_IDENTITY      = 0x00000001,
+  MWT_LEFTMULTIPLY  = 0x00000002,
+  MWT_RIGHTMULTIPLY = 0x00000003,
+  MWT_SET           = 0x00000004
+} ModifyWorldTransformMode;
 
 /** 2.1.27 PolygonFillMode Enumeration
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/879a1869-08ad-4977-83e8-09be265e2c7c
@@ -3093,6 +3111,83 @@ typedef struct tagEMRRESTOREDC {
   FSeek(recordEnd);
 } EMRRESTOREDC;
 
+
+
+/** 2.3.11.7 EMR_SCALEVIEWPORTEXTEX Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/469e353c-4209-4919-a5aa-9331b60765ed
+ */
+typedef struct tagEMRSCALEVIEWPORTEXTEX {
+  local int64 recordStart = FTell();
+  DWORD iType = { 0x0000001F };
+  DWORD nSize;
+  local int previousRatioEvilState = SetEvilBit(false);
+  LONG xNum   = { -2, -1, 1, 2 };
+  LONG xDenom = { -2, -1, 1, 2 };
+  LONG yNum   = { -2, -1, 1, 2 };
+  LONG yDenom = { -2, -1, 1, 2 };
+  SetEvilBit(previousRatioEvilState);
+
+  local int64 recordSize = FTell() - recordStart;
+  local uint paddingSize = Align4(recordSize) - recordSize;
+  BYTE EmrAlignmentPadding[paddingSize];
+  local int64 recordEnd = FTell();
+  AssertValidEmfRecordSize(recordEnd - recordStart);
+  FSeek(recordStart + 4);
+  local int previousEvilState = SetEvilBit(false);
+  DWORD nSize = { (DWORD)(recordEnd - recordStart) };
+  SetEvilBit(previousEvilState);
+  FSeek(recordEnd);
+} EMRSCALEVIEWPORTEXTEX;
+
+/** 2.3.11.8 EMR_SCALEWINDOWEXTEX Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/01698f29-bbcb-4100-9bad-0fd52c33b0da
+ */
+typedef struct tagEMRSCALEWINDOWEXTEX {
+  local int64 recordStart = FTell();
+  DWORD iType = { 0x00000020 };
+  DWORD nSize;
+  local int previousRatioEvilState = SetEvilBit(false);
+  LONG xNum   = { -2, -1, 1, 2 };
+  LONG xDenom = { -2, -1, 1, 2 };
+  LONG yNum   = { -2, -1, 1, 2 };
+  LONG yDenom = { -2, -1, 1, 2 };
+  SetEvilBit(previousRatioEvilState);
+
+  local int64 recordSize = FTell() - recordStart;
+  local uint paddingSize = Align4(recordSize) - recordSize;
+  BYTE EmrAlignmentPadding[paddingSize];
+  local int64 recordEnd = FTell();
+  AssertValidEmfRecordSize(recordEnd - recordStart);
+  FSeek(recordStart + 4);
+  local int previousEvilState = SetEvilBit(false);
+  DWORD nSize = { (DWORD)(recordEnd - recordStart) };
+  SetEvilBit(previousEvilState);
+  FSeek(recordEnd);
+} EMRSCALEWINDOWEXTEX;
+
+/** 2.3.11.9 EMR_SETARCDIRECTION Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/83a955e6-13b8-4720-a521-542e3dd91cba
+ */
+typedef struct tagEMRSETARCDIRECTION {
+  local int64 recordStart = FTell();
+  DWORD iType = { 0x00000039 };
+  DWORD nSize;
+  local int previousDirectionEvilState = SetEvilBit(false);
+  ArcDirection ArcDirection;
+  SetEvilBit(previousDirectionEvilState);
+
+  local int64 recordSize = FTell() - recordStart;
+  local uint paddingSize = Align4(recordSize) - recordSize;
+  BYTE EmrAlignmentPadding[paddingSize];
+  local int64 recordEnd = FTell();
+  AssertValidEmfRecordSize(recordEnd - recordStart);
+  FSeek(recordStart + 4);
+  local int previousEvilState = SetEvilBit(false);
+  DWORD nSize = { (DWORD)(recordEnd - recordStart) };
+  SetEvilBit(previousEvilState);
+  FSeek(recordEnd);
+} EMRSETARCDIRECTION;
+
 /** 11.10 EMR_SETBKCOLOR Record
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/24f40952-62d4-40b0-ba40-aad8fb4fc421
  */
@@ -3350,6 +3445,32 @@ typedef struct tagEMRSETWINDOWORGEX {
 // 12. Transform Record Types
 //------------------------------------------------
 
+
+
+/** 2.3.12.1 EMR_MODIFYWORLDTRANSFORM Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/c70b85e5-8c31-418f-a7b8-349e417e0f76
+ */
+typedef struct tagEMRMODIFYWORLDTRANSFORM {
+  local int64 recordStart = FTell();
+  DWORD iType = { 0x00000024 };
+  DWORD nSize;
+  XFORM Xform;
+  local int previousModeEvilState = SetEvilBit(false);
+  ModifyWorldTransformMode ModifyWorldTransformMode;
+  SetEvilBit(previousModeEvilState);
+
+  local int64 recordSize = FTell() - recordStart;
+  local uint paddingSize = Align4(recordSize) - recordSize;
+  BYTE EmrAlignmentPadding[paddingSize];
+  local int64 recordEnd = FTell();
+  AssertValidEmfRecordSize(recordEnd - recordStart);
+  FSeek(recordStart + 4);
+  local int previousEvilState = SetEvilBit(false);
+  DWORD nSize = { (DWORD)(recordEnd - recordStart) };
+  SetEvilBit(previousEvilState);
+  FSeek(recordEnd);
+} EMRMODIFYWORLDTRANSFORM;
+
 /** 12.2 EMR_SETWORLDTRANSFORM Record
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/985724c0-4db1-48f0-b346-67288b3288cb
  */
@@ -3386,6 +3507,10 @@ local DWORD supportedRecordTypes[] = {
   EMR_SETWINDOWORGEX,
   EMR_SETVIEWPORTEXTEX,
   EMR_SETVIEWPORTORGEX,
+  EMR_SCALEVIEWPORTEXTEX,
+  EMR_SCALEWINDOWEXTEX,
+  EMR_SETWORLDTRANSFORM,
+  EMR_MODIFYWORLDTRANSFORM,
   EMR_SETPIXELV,
   EMR_SETMAPMODE,
   EMR_SETBKMODE,
@@ -3418,6 +3543,7 @@ local DWORD supportedRecordTypes[] = {
   EMR_POLYPOLYGON16,
   EMR_POLYDRAW16,
   EMR_ARCTO,
+  EMR_SETARCDIRECTION,
   EMR_COMMENT,
   EMR_INVERTRGN,
   EMR_PAINTRGN,
@@ -3534,6 +3660,12 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
   } else if (recordType == EMR_SETVIEWPORTORGEX) {
     EMRSETVIEWPORTORGEX SetViewportOrgEx;
 
+  } else if (recordType == EMR_SCALEVIEWPORTEXTEX) {
+    EMRSCALEVIEWPORTEXTEX ScaleViewportExtEx;
+
+  } else if (recordType == EMR_SCALEWINDOWEXTEX) {
+    EMRSCALEWINDOWEXTEX ScaleWindowExtEx;
+
   } else if (recordType == EMR_SETPIXELV) {
     EMRSETPIXELV SetPixelV;
 
@@ -3578,6 +3710,9 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
 
   } else if (recordType == EMR_SETWORLDTRANSFORM) {
     EMRSETWORLDTRANSFORM SetWorldTranform;
+
+  } else if (recordType == EMR_MODIFYWORLDTRANSFORM) {
+    EMRMODIFYWORLDTRANSFORM ModifyWorldTransform;
 
   } else if (recordType == EMR_SELECTOBJECT) {
     EMRSELECTOBJECT SelectObject;
@@ -3635,6 +3770,9 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
 
   } else if (recordType == EMR_ARCTO) {
     EMRARCTO ArcTo;
+
+  } else if (recordType == EMR_SETARCDIRECTION) {
+    EMRSETARCDIRECTION SetArcDirection;
 
   } else if (recordType == EMR_POLYDRAW) {
     EMRPOLYDRAW PolyDraw;
