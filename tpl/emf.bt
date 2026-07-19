@@ -75,6 +75,28 @@ typedef struct tagICEXYZTRIPLE {
 // 2.1 WMF Enumerations
 //------------------------------------------------
 
+/** 2.1.1.2 BinaryRasterOperation Enumeration
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/781a06bd-af9b-48b7-8e7d-d922de0f9c26
+ */
+typedef enum <DWORD> {
+  R2_BLACK       = 0x00000001,
+  R2_NOTMERGEPEN = 0x00000002,
+  R2_MASKNOTPEN  = 0x00000003,
+  R2_NOTCOPYPEN  = 0x00000004,
+  R2_MASKPENNOT  = 0x00000005,
+  R2_NOT         = 0x00000006,
+  R2_XORPEN      = 0x00000007,
+  R2_NOTMASKPEN  = 0x00000008,
+  R2_MASKPEN     = 0x00000009,
+  R2_NOTXORPEN   = 0x0000000A,
+  R2_NOP         = 0x0000000B,
+  R2_MERGENOTPEN = 0x0000000C,
+  R2_COPYPEN     = 0x0000000D,
+  R2_MERGEPENNOT = 0x0000000E,
+  R2_MERGEPEN    = 0x0000000F,
+  R2_WHITE       = 0x00000010
+} BinaryRasterOperation;
+
 /** 2.1.1.3 BitCount Enumeration
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/792153f4-1e99-4ec8-93cf-d171a5f33903
  */
@@ -121,6 +143,16 @@ typedef enum <DWORD> {
   LCS_GM_GRAPHICS         = 0x00000002,
   LCS_GM_IMAGES           = 0x00000004
 } GamutMappingIntent;
+
+/** 2.1.1.13 Layout Enumeration
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/523c8784-561f-4b25-bdb9-630e0f71be0d
+ */
+typedef enum <DWORD> {
+  LAYOUT_LTR                             = 0x00000000,
+  LAYOUT_RTL                             = 0x00000001,
+  LAYOUT_BITMAPORIENTATIONPRESERVED      = 0x00000008,
+  LAYOUT_RTL_BITMAPORIENTATIONPRESERVED  = 0x00000009
+} Layout;
 
 /** 2.1.1.14 LogicalColorSpace Enumeration
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/eb4bbd50-b3ce-4917-895c-be31f214797f
@@ -438,6 +470,16 @@ typedef enum <DWORD> {
   GRADIENT_FILL_RECT_V   = 0x00000001,
   GRADIENT_FILL_TRIANGLE = 0x00000002
 } GradientFill;
+
+/** 2.1.18 ICMMode Enumeration
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/a7c9d483-4a24-4058-8dc1-b5e0809ea758
+ */
+typedef enum <DWORD> {
+  ICM_OFF            = 0x00000001,
+  ICM_ON             = 0x00000002,
+  ICM_QUERY          = 0x00000003,
+  ICM_DONE_OUTSIDEDC = 0x00000004
+} ICMMode;
 
 /** 2.1.21 MapMode Enumeration
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/109d7955-767e-4955-a0e2-f8b5e14f757a
@@ -3230,6 +3272,29 @@ typedef struct tagEMRSETBKMODE {
   FSeek(recordEnd);
 } EMRSETBKMODE;
 
+
+
+/** 2.3.11.12 EMR_SETBRUSHORGEX Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/b02ab7ee-4c88-4bf2-9ce9-9100636d86be
+ */
+typedef struct tagEMRSETBRUSHORGEX {
+  local int64 recordStart = FTell();
+  DWORD iType = { 0x0000000D };
+  DWORD nSize;
+  POINTL Origin;
+
+  local int64 recordSize = FTell() - recordStart;
+  local uint paddingSize = Align4(recordSize) - recordSize;
+  BYTE EmrAlignmentPadding[paddingSize];
+  local int64 recordEnd = FTell();
+  AssertValidEmfRecordSize(recordEnd - recordStart);
+  FSeek(recordStart + 4);
+  local int previousEvilState = SetEvilBit(false);
+  DWORD nSize = { (DWORD)(recordEnd - recordStart) };
+  SetEvilBit(previousEvilState);
+  FSeek(recordEnd);
+} EMRSETBRUSHORGEX;
+
 /** 11.19 EMR_SETMAPMODE Record
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/aa4ad35d-fa42-4a4f-959a-8b41304e1b05
  */
@@ -3250,6 +3315,77 @@ typedef struct tagEMRSETMAPMODE {
   SetEvilBit(previousEvilState);
   FSeek(recordEnd);
 } EMRSETMAPMODE;
+
+
+
+/** 2.3.11.14 EMR_SETICMMODE Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/a7c9d483-4a24-4058-8dc1-b5e0809ea758
+ */
+typedef struct tagEMRSETICMMODE {
+  local int64 recordStart = FTell();
+  DWORD iType = { 0x00000062 };
+  DWORD nSize;
+  local int previousModeEvilState = SetEvilBit(false);
+  ICMMode ICMMode;
+  SetEvilBit(previousModeEvilState);
+
+  local int64 recordSize = FTell() - recordStart;
+  local uint paddingSize = Align4(recordSize) - recordSize;
+  BYTE EmrAlignmentPadding[paddingSize];
+  local int64 recordEnd = FTell();
+  AssertValidEmfRecordSize(recordEnd - recordStart);
+  FSeek(recordStart + 4);
+  local int previousEvilState = SetEvilBit(false);
+  DWORD nSize = { (DWORD)(recordEnd - recordStart) };
+  SetEvilBit(previousEvilState);
+  FSeek(recordEnd);
+} EMRSETICMMODE;
+
+/** 2.3.11.17 EMR_SETLAYOUT Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/dcb69f9d-6f69-466a-af1e-6f505d86cc67
+ */
+typedef struct tagEMRSETLAYOUT {
+  local int64 recordStart = FTell();
+  DWORD iType = { 0x00000073 };
+  DWORD nSize;
+  local int previousLayoutEvilState = SetEvilBit(false);
+  Layout LayoutMode;
+  SetEvilBit(previousLayoutEvilState);
+
+  local int64 recordSize = FTell() - recordStart;
+  local uint paddingSize = Align4(recordSize) - recordSize;
+  BYTE EmrAlignmentPadding[paddingSize];
+  local int64 recordEnd = FTell();
+  AssertValidEmfRecordSize(recordEnd - recordStart);
+  FSeek(recordStart + 4);
+  local int previousEvilState = SetEvilBit(false);
+  DWORD nSize = { (DWORD)(recordEnd - recordStart) };
+  SetEvilBit(previousEvilState);
+  FSeek(recordEnd);
+} EMRSETLAYOUT;
+
+/** 2.3.11.20 EMR_SETMAPPERFLAGS Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/6647abf7-bd70-43ef-8766-1a6e06ed2f03
+ */
+typedef struct tagEMRSETMAPPERFLAGS {
+  local int64 recordStart = FTell();
+  DWORD iType = { 0x00000010 };
+  DWORD nSize;
+  local int previousFlagsEvilState = SetEvilBit(false);
+  DWORD Flags = { 0x00000000, 0x00000001 };
+  SetEvilBit(previousFlagsEvilState);
+
+  local int64 recordSize = FTell() - recordStart;
+  local uint paddingSize = Align4(recordSize) - recordSize;
+  BYTE EmrAlignmentPadding[paddingSize];
+  local int64 recordEnd = FTell();
+  AssertValidEmfRecordSize(recordEnd - recordStart);
+  FSeek(recordStart + 4);
+  local int previousEvilState = SetEvilBit(false);
+  DWORD nSize = { (DWORD)(recordEnd - recordStart) };
+  SetEvilBit(previousEvilState);
+  FSeek(recordEnd);
+} EMRSETMAPPERFLAGS;
 
 /** 2.3.11.21 EMR_SETMITERLIMIT Record
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/2637d0d0-92dd-48e8-be5e-6400b4d1fc5e
@@ -3292,6 +3428,31 @@ typedef struct {
   SetEvilBit(previousEvilState);
   FSeek(recordEnd);
 } EMRSETPOLYFILLMODE;
+
+
+
+/** 2.3.11.23 EMR_SETROP2 Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/cedee7e0-4e66-47b6-ae1d-816e1e319786
+ */
+typedef struct tagEMRSETROP2 {
+  local int64 recordStart = FTell();
+  DWORD iType = { 0x00000014 };
+  DWORD nSize;
+  local int previousModeEvilState = SetEvilBit(false);
+  BinaryRasterOperation ROP2Mode;
+  SetEvilBit(previousModeEvilState);
+
+  local int64 recordSize = FTell() - recordStart;
+  local uint paddingSize = Align4(recordSize) - recordSize;
+  BYTE EmrAlignmentPadding[paddingSize];
+  local int64 recordEnd = FTell();
+  AssertValidEmfRecordSize(recordEnd - recordStart);
+  FSeek(recordStart + 4);
+  local int previousEvilState = SetEvilBit(false);
+  DWORD nSize = { (DWORD)(recordEnd - recordStart) };
+  SetEvilBit(previousEvilState);
+  FSeek(recordEnd);
+} EMRSETROP2;
 
 /** 11.24 EMR_SETSTRETCHBLTMODE Record
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/ff00ab98-6e2c-4eca-b664-04ab2956b6a5
@@ -3355,6 +3516,32 @@ typedef struct tagEMRSETTEXTCOLOR {
   SetEvilBit(previousEvilState);
   FSeek(recordEnd);
 } EMRSETTEXTCOLOR;
+
+
+
+/** 2.3.11.27 EMR_SETTEXTJUSTIFICATION Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/edbc2be0-1da0-45d6-9c05-677cbcaa2d47
+ */
+typedef struct tagEMRSETTEXTJUSTIFICATION {
+  local int64 recordStart = FTell();
+  DWORD iType = { 0x00000078 };
+  DWORD nSize;
+  LONG nBreakExtra;
+  local int previousCountEvilState = SetEvilBit(false);
+  LONG nBreakCount = { 1, 2, 4 };
+  SetEvilBit(previousCountEvilState);
+
+  local int64 recordSize = FTell() - recordStart;
+  local uint paddingSize = Align4(recordSize) - recordSize;
+  BYTE EmrAlignmentPadding[paddingSize];
+  local int64 recordEnd = FTell();
+  AssertValidEmfRecordSize(recordEnd - recordStart);
+  FSeek(recordStart + 4);
+  local int previousEvilState = SetEvilBit(false);
+  DWORD nSize = { (DWORD)(recordEnd - recordStart) };
+  SetEvilBit(previousEvilState);
+  FSeek(recordEnd);
+} EMRSETTEXTJUSTIFICATION;
 
 /** 11.28 EMR_SETVIEWPORTEXTEX Record
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/a71486a3-9ebd-43e3-819f-5318a58b70d5
@@ -3507,13 +3694,20 @@ local DWORD supportedRecordTypes[] = {
   EMR_SETWINDOWORGEX,
   EMR_SETVIEWPORTEXTEX,
   EMR_SETVIEWPORTORGEX,
+  EMR_SETBRUSHORGEX,
   EMR_SCALEVIEWPORTEXTEX,
   EMR_SCALEWINDOWEXTEX,
   EMR_SETWORLDTRANSFORM,
   EMR_MODIFYWORLDTRANSFORM,
   EMR_SETPIXELV,
+  EMR_SETMAPPERFLAGS,
   EMR_SETMAPMODE,
   EMR_SETBKMODE,
+  EMR_SETROP2,
+  EMR_SETICMMODE,
+  EMR_SETLAYOUT,
+  EMR_SETTEXTJUSTIFICATION,
+  EMR_SETMITERLIMIT,
   EMR_SETPOLYFILLMODE,
   EMR_SETSTRETCHBLTMODE,
   EMR_SETTEXTCOLOR,
@@ -3660,6 +3854,9 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
   } else if (recordType == EMR_SETVIEWPORTORGEX) {
     EMRSETVIEWPORTORGEX SetViewportOrgEx;
 
+  } else if (recordType == EMR_SETBRUSHORGEX) {
+    EMRSETBRUSHORGEX SetBrushOrgEx;
+
   } else if (recordType == EMR_SCALEVIEWPORTEXTEX) {
     EMRSCALEVIEWPORTEXTEX ScaleViewportExtEx;
 
@@ -3668,6 +3865,9 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
 
   } else if (recordType == EMR_SETPIXELV) {
     EMRSETPIXELV SetPixelV;
+
+  } else if (recordType == EMR_SETMAPPERFLAGS) {
+    EMRSETMAPPERFLAGS SetMapperFlags;
 
   } else if (recordType == EMR_SETMAPMODE) {
     EMRSETMAPMODE SetMapMode;
@@ -3678,6 +3878,9 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
   } else if (recordType == EMR_SETPOLYFILLMODE) {
     EMRSETPOLYFILLMODE SetPolyFillMode;
 
+  } else if (recordType == EMR_SETROP2) {
+    EMRSETROP2 SetRop2;
+
   } else if (recordType == EMR_SETSTRETCHBLTMODE) {
     EMRSETSTRETCHBLTMODE SetStretchMode;
 
@@ -3686,6 +3889,9 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
 
   } else if (recordType == EMR_SETTEXTCOLOR) {
     EMRSETTEXTCOLOR SetTextColor;
+
+  } else if (recordType == EMR_SETTEXTJUSTIFICATION) {
+    EMRSETTEXTJUSTIFICATION SetTextJustification;
 
   } else if (recordType == EMR_SETBKCOLOR) {
     EMRSETBKCOLOR SetBkColor;
@@ -3779,6 +3985,12 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
 
   } else if (recordType == EMR_SETMITERLIMIT) {
     EMRSETMITERLIMIT SetMiterLimit;
+
+  } else if (recordType == EMR_SETICMMODE) {
+    EMRSETICMMODE SetIcmMode;
+
+  } else if (recordType == EMR_SETLAYOUT) {
+    EMRSETLAYOUT SetLayout;
 
   } else if (recordType == EMR_BEGINPATH) {
     EMRBEGINPATH BeginPath;
