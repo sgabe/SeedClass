@@ -10,6 +10,7 @@
 // File Mask: *.emf
 //  ID Bytes: 01 00 00 00
 //   History:
+//   0.7   2026-07-19 G Seljan: New records.
 //   0.6   2026-07-19 G Seljan: Backpatch record sizes.
 //   0.5   2026-07-18 G Seljan: Validity and maintainability improvements.
 //   0.4   2025-06-29 G Seljan: Updated version.
@@ -648,6 +649,40 @@ typedef struct tagLOGPENEX {
   DWORD NumStyleEntries;
   DWORD StyleEntry[NumStyleEntries];
 } LOGPENEX;
+
+/** 2.2.22 PixelFormatDescriptor Object
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/1db036d6-2da8-4b92-b4f8-e9cab8cc93b7
+ */
+typedef struct tagPIXELFORMATDESCRIPTOR {
+  local int previousConstantEvilState = SetEvilBit(false);
+  WORD nSize = { 0x0028 };
+  WORD nVersion = { 0x0001 };
+  DWORD dwFlags = { 0x00000025 }; // DOUBLEBUFFER | DRAW_TO_WINDOW | SUPPORT_OPENGL
+  BYTE iPixelType = { 0x00 };     // PFD_TYPE_RGBA
+  BYTE cColorBits = { 24 };
+  BYTE cRedBits = { 8 };
+  BYTE cRedShift = { 16 };
+  BYTE cGreenBits = { 8 };
+  BYTE cGreenShift = { 8 };
+  BYTE cBlueBits = { 8 };
+  BYTE cBlueShift = { 0 };
+  BYTE cAlphaBits = { 8 };
+  BYTE cAlphaShift = { 24 };
+  BYTE cAccumBits = { 0 };
+  BYTE cAccumRedBits = { 0 };
+  BYTE cAccumGreenBits = { 0 };
+  BYTE cAccumBlueBits = { 0 };
+  BYTE cAccumAlphaBits = { 0 };
+  BYTE cDepthBits = { 24 };
+  BYTE cStencilBits = { 8 };
+  BYTE cAuxBuffers = { 0 };
+  BYTE iLayerType = { 0 };
+  BYTE bReserved = { 0 };
+  DWORD dwLayerMask = { 0 };
+  DWORD dwVisibleMask = { 0 };
+  DWORD dwDamageMask = { 0 };
+  SetEvilBit(previousConstantEvilState);
+} PIXELFORMATDESCRIPTOR;
 
 /** 2.2.26 TriVertex Object
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/33578509-8349-46b6-8f8f-107c3f70bace
@@ -3132,6 +3167,27 @@ typedef struct tagEMRSAVEDC {
   FSeek(recordEnd);
 } EMRSAVEDC;
 
+/** 2.3.11.5 EMR_PIXELFORMAT Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/ba9aa909-eb05-4d2f-a51b-10cb6df68a54
+ */
+typedef struct tagEMRPIXELFORMAT {
+  local int64 recordStart = FTell();
+  DWORD iType = { 0x00000068 };
+  DWORD nSize;
+  PIXELFORMATDESCRIPTOR pfd;
+
+  local int64 recordSize = FTell() - recordStart;
+  local uint paddingSize = Align4(recordSize) - recordSize;
+  BYTE EmrAlignmentPadding[paddingSize];
+  local int64 recordEnd = FTell();
+  AssertValidEmfRecordSize(recordEnd - recordStart);
+  FSeek(recordStart + 4);
+  local int previousEvilState = SetEvilBit(false);
+  DWORD nSize = { (DWORD)(recordEnd - recordStart) };
+  SetEvilBit(previousEvilState);
+  FSeek(recordEnd);
+} EMRPIXELFORMAT;
+
 /** 2.3.11.6 EMR_RESTOREDC Record
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/efa2f180-4c7e-4a7b-b4ef-a1d06a0ce89f
  */
@@ -3717,6 +3773,7 @@ local DWORD supportedRecordTypes[] = {
   EMR_EXCLUDECLIPRECT,
   EMR_INTERSECTCLIPRECT,
   EMR_SAVEDC,
+  EMR_PIXELFORMAT,
   EMR_ANGLEARC,
   EMR_ELLIPSE,
   EMR_RECTANGLE,
@@ -3931,6 +3988,9 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
 
   } else if (recordType == EMR_DELETEOBJECT) {
     EMRDELETEOBJECT DeleteObject;
+
+  } else if (recordType == EMR_PIXELFORMAT) {
+    EMRPIXELFORMAT PixelFormat;
 
   } else if (recordType == EMR_ANGLEARC) {
     EMRANGLEARC AngleArc;
