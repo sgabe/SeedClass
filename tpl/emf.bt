@@ -1708,21 +1708,22 @@ typedef struct tagEMREXTTEXTOUTW {
       LONG x = { 40 };
       LONG y = { 60 };
     } ptlReference;
-    DWORD nChars = { 3 };
-    DWORD offString = { 0x0000004C };
-    DWORD fOptions = { 0x00000000 };
+    DWORD nChars = { 0, 1, 3, 8, 16 };
+    DWORD offString = { (DWORD)(nChars ? 0x0000004C : 0) };
+    DWORD fOptions = { 0, 2, 4, 6 }; // Normal, ETO_OPAQUE, ETO_CLIPPED, or both.
     RECTL rcl;
-    DWORD offDx = { (DWORD)(Align4(0x0000004C + nChars * 2)) };
+    DWORD offDx = { nChars ? (DWORD)(Align4(0x0000004C + nChars * 2)) : 0 };
   } wEmrText;
   if (wEmrText.nChars) {
     FSeek(recordStart + wEmrText.offString);
-    // A, Latin small e with acute, and Greek capital omega in UTF-16LE.
-    struct {
-      WORD LatinA = { 0x0041 };
-      WORD LatinEAcute = { 0x00E9 };
-      WORD GreekOmega = { 0x03A9 };
-    } bStringBuffer;
-    WORD StringAlignmentPadding = { 0 };
+    // Repeat A, e-acute, omega without generating unpaired UTF-16 surrogates.
+    local WORD unicodeSample[] = { 0x0041, 0x00E9, 0x03A9 };
+    local uint stringIndex = 0;
+    for (stringIndex = 0; stringIndex < wEmrText.nChars; stringIndex++) {
+      WORD Character = { unicodeSample[stringIndex % 3] };
+    }
+    local uint stringPadding = (uint)(Align4(wEmrText.nChars * 2) - wEmrText.nChars * 2);
+    BYTE StringAlignmentPadding[stringPadding];
     FSeek(recordStart + wEmrText.offDx);
     local uint charIndex = 0;
     for (charIndex = 0; charIndex < wEmrText.nChars; charIndex++) {
