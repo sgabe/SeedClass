@@ -1452,6 +1452,11 @@ typedef struct tagSIZEL_MILLIMETERS {
  */
 typedef struct {
   local int64 recordStart = FTell();
+  // Keep required header constants and frame geometry valid during generation.
+  local int previousHeaderEvilState = SetEvilBit(false);
+  if (IsParsing()) {
+    SetEvilBit(previousHeaderEvilState); // Preserve the existing input parsing policy.
+  }
   DWORD iType = { 0x00000001 };                        // Record type EMR_HEADER.
   DWORD nSize;
   RECTL rclBounds;                                     // Inclusive-inclusive bounds in device units.
@@ -1482,6 +1487,7 @@ typedef struct {
   DWORD nSize = { (DWORD)(recordEnd - recordStart) };
   SetEvilBit(previousEvilState);
   FSeek(recordEnd);
+  SetEvilBit(previousHeaderEvilState); // Restore body generation and parsing policy.
 } EMRHEADER;
 
 typedef struct {
