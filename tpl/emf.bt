@@ -4188,7 +4188,13 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
     if (IsParsing()) {
       // Parse the path geometry and completion records on subsequent iterations.
     } else {
-      if (Random(2)) {
+      local uint pathSequenceKind = Random(3);
+      if (pathSequenceKind == 2) {
+        // Cancel an open path without painting or leaving a pending path.
+        EMRRECTANGLE AbortedRectangle;
+        EMRABORTPATH AbortRectanglePath;
+        recCnt += 2;
+      } else if (pathSequenceKind == 1) {
         // An open, bounded triangle exercises explicit figure closing.
         struct {
           DWORD iType = { EMR_POLYLINE };
