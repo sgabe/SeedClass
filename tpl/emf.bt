@@ -2279,9 +2279,21 @@ typedef struct tagEMRPOLYLINETO16 {
   DWORD iType = { 0x00000059 };
   DWORD nSize;
   RECTL rclBounds;
-  local int previousCountEvilState = SetEvilBit(false);
+  // Input records keep their declared Count; generation still emits two
+  // points.
+  local int previousCountEvilState = SetEvilBit(IsParsing());
   DWORD cntPoints = { 2 };
   SetEvilBit(previousCountEvilState);
+  if (IsParsing()) {
+    local int64 declaredSize = (int64)nSize;
+    local int64 declaredCount = (int64)cntPoints;
+    Assert(declaredSize >= 28,
+           "EMR_POLYLINETO16 Size must cover its fixed fields.");
+    Assert(declaredSize <= (int64)FileSize() - recordStart,
+           "EMR_POLYLINETO16 Size cannot extend past the end of the file.");
+    Assert(declaredCount * 4 <= declaredSize - 28,
+           "EMR_POLYLINETO16 Count points must fit within the record Size.");
+  }
   POINTS aPoints[cntPoints];
 
   local int64 recordSize = FTell() - recordStart;
