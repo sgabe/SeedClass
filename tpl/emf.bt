@@ -1114,29 +1114,55 @@ typedef struct tagEMRSTRETCHBLT {
  */
 typedef struct tagEMRSTRETCHDIBITS {
   local int64 recordStart = FTell();
+  local int previousBitmapEvilState = SetEvilBit(false);
   local uint emrSize = 0x00000050;
   local uint bmiSize = 0x00000028;
-  local int64 emrOffset = FTell();
-  FSeek(emrOffset);
+  local int bitmapWidth = 3;
+  local int bitmapHeight = 2;
+  local uint bitmapStride = (uint)Align4(bitmapWidth * 3);
+  local uint bitmapBitsSize = bitmapStride * bitmapHeight;
 
   DWORD iType = { 0x00000051 };
   DWORD	nSize;
   RECTL rclBounds;
-  DWORD xDest;
-  DWORD yDest;
-  DWORD xSrc;
-  DWORD ySrc;
-  DWORD cxSrc;
-  DWORD cySrc;
+  LONG xDest = { 40 };
+  LONG yDest = { 60 };
+  LONG xSrc = { 0 };
+  LONG ySrc = { 0 };
+  LONG cxSrc = { bitmapWidth };
+  LONG cySrc = { bitmapHeight };
   DWORD offBmiSrc = { emrSize };
-  DWORD cbBmiSrc;
-  DWORD offBitsSrc;
-  DWORD cbBitsSrc;
-  DIBColors iUsageSrc;
-  DWORD dwRop;
-  DWORD cxDest;
-  DWORD cyDest;
-  BITMAPINFO bmi;
+  DWORD cbBmiSrc = { bmiSize };
+  DWORD offBitsSrc = { emrSize + bmiSize };
+  DWORD cbBitsSrc = { bitmapBitsSize };
+  DWORD iUsageSrc = { 0 }; // DIB_RGB_COLORS.
+  DWORD dwRop = { 0x00CC0020 }; // SRCCOPY requires the source pixels.
+  LONG cxDest = { 64 };
+  LONG cyDest = { 64 };
+
+  // This 24-bit BI_RGB case has a BITMAPINFOHEADER and no color table.
+  FSeek(recordStart + offBmiSrc);
+  struct {
+    DWORD biSize = { bmiSize };
+    LONG biWidth = { bitmapWidth };
+    LONG biHeight = { bitmapHeight }; // Positive height: bottom-up rows.
+    WORD biPlanes = { 1 };
+    WORD biBitCount = { 24 };
+    DWORD biCompression = { BI_RGB };
+    DWORD biSizeImage = { bitmapBitsSize };
+    LONG biXPelsPerMeter = { 0 };
+    LONG biYPelsPerMeter = { 0 };
+    DWORD biClrUsed = { 0 };
+    DWORD biClrImportant = { 0 };
+  } bmi;
+  Assert(FTell() - recordStart - offBmiSrc == cbBmiSrc,
+         "Source bitmap header length must match cbBmiSrc.");
+
+  FSeek(recordStart + offBitsSrc);
+  // Each bottom-up row has three BGR pixels followed by three padding bytes.
+  UBYTE BitmapBits[bitmapBitsSize];
+  Assert(FTell() - recordStart - offBitsSrc == cbBitsSrc,
+         "Source pixels and row padding must match cbBitsSrc.");
 
   local int64 recordSize = FTell() - recordStart;
   local uint paddingSize = Align4(recordSize) - recordSize;
@@ -1148,6 +1174,7 @@ typedef struct tagEMRSTRETCHDIBITS {
   DWORD nSize = { (DWORD)(recordEnd - recordStart) };
   SetEvilBit(previousEvilState);
   FSeek(recordEnd);
+  SetEvilBit(previousBitmapEvilState);
 } EMRSTRETCHDIBITS;
 
 /** 2.3.1.8 EMR_TRANSPARENTBLT Record
@@ -3855,6 +3882,7 @@ local DWORD supportedRecordTypes[] = {
   EMR_INVERTRGN,
   EMR_PAINTRGN,
   EMR_EXTSELECTCLIPRGN,
+  EMR_STRETCHDIBITS,
   EMR_DRAWESCAPE,
   EMR_EXTESCAPE,
   EMR_GRADIENTFILL
