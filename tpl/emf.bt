@@ -1273,7 +1273,9 @@ typedef struct tagEMREXTSELECTCLIPRGN {
   DWORD nSize;
   DWORD rgnDataSize = { 0x00000030 };
   RegionMode rgnMode;
+  local int64 regionDataStart = FTell();
   REGIONDATA rgnData;
+  local int64 regionDataEnd = FTell();
 
   local int64 recordSize = FTell() - recordStart;
   local uint paddingSize = Align4(recordSize) - recordSize;
@@ -1283,6 +1285,12 @@ typedef struct tagEMREXTSELECTCLIPRGN {
   FSeek(recordStart + 4);
   local int previousEvilState = SetEvilBit(false);
   DWORD nSize = { (DWORD)(recordEnd - recordStart) };
+  if (IsParsing()) {
+    // Preserve the existing input parsing policy for the declared region length.
+  } else {
+    FSeek(recordStart + 8);
+    DWORD rgnDataSize = { (DWORD)(regionDataEnd - regionDataStart) };
+  }
   SetEvilBit(previousEvilState);
   FSeek(recordEnd);
 } EMREXTSELECTCLIPRGN;
@@ -1809,7 +1817,9 @@ typedef struct tagEMRFILLRGN {
   RECTL rclBounds;
   DWORD rgnDataSize = { 0x00000030 };
   DWORD ihBrush;
+  local int64 regionDataStart = FTell();
   REGIONDATA rgnData;
+  local int64 regionDataEnd = FTell();
 
   local int64 recordSize = FTell() - recordStart;
   local uint paddingSize = Align4(recordSize) - recordSize;
@@ -1819,6 +1829,12 @@ typedef struct tagEMRFILLRGN {
   FSeek(recordStart + 4);
   local int previousEvilState = SetEvilBit(false);
   DWORD nSize = { (DWORD)(recordEnd - recordStart) };
+  if (IsParsing()) {
+    // Preserve the existing input parsing policy for the declared region length.
+  } else {
+    FSeek(recordStart + 24);
+    DWORD rgnDataSize = { (DWORD)(regionDataEnd - regionDataStart) };
+  }
   SetEvilBit(previousEvilState);
   FSeek(recordEnd);
 } EMRFILLRGN;
@@ -1835,7 +1851,9 @@ typedef struct tagEMRFRAMERGN {
   DWORD ihBrush;
   LONG  width;
   LONG  height;
+  local int64 regionDataStart = FTell();
   REGIONDATA rgnData;
+  local int64 regionDataEnd = FTell();
 
   local int64 recordSize = FTell() - recordStart;
   local uint paddingSize = Align4(recordSize) - recordSize;
@@ -1845,6 +1863,12 @@ typedef struct tagEMRFRAMERGN {
   FSeek(recordStart + 4);
   local int previousEvilState = SetEvilBit(false);
   DWORD nSize = { (DWORD)(recordEnd - recordStart) };
+  if (IsParsing()) {
+    // Preserve the existing input parsing policy for the declared region length.
+  } else {
+    FSeek(recordStart + 24);
+    DWORD rgnDataSize = { (DWORD)(regionDataEnd - regionDataStart) };
+  }
   SetEvilBit(previousEvilState);
   FSeek(recordEnd);
 } EMRFRAMERGN;
@@ -3219,7 +3243,9 @@ typedef struct tagEMRINVERTRGN {
   DWORD nSize;
   RECTL rclBounds;
   DWORD rgnDataSize = { 0x00000030 };
+  local int64 regionDataStart = FTell();
   REGIONDATA rgnData;
+  local int64 regionDataEnd = FTell();
 
   local int64 recordSize = FTell() - recordStart;
   local uint paddingSize = Align4(recordSize) - recordSize;
@@ -3229,6 +3255,12 @@ typedef struct tagEMRINVERTRGN {
   FSeek(recordStart + 4);
   local int previousEvilState = SetEvilBit(false);
   DWORD nSize = { (DWORD)(recordEnd - recordStart) };
+  if (IsParsing()) {
+    // Preserve the existing input parsing policy for the declared region length.
+  } else {
+    FSeek(recordStart + 24);
+    DWORD rgnDataSize = { (DWORD)(regionDataEnd - regionDataStart) };
+  }
   SetEvilBit(previousEvilState);
   FSeek(recordEnd);
 } EMRINVERTRGN;
