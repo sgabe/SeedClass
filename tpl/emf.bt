@@ -2807,9 +2807,19 @@ typedef struct tagEMRRESIZEPALETTE {
  */
 typedef struct tagEMRSELECTOBJECT {
   local int64 recordStart = FTell();
+  local int previousStockObjectEvilState = SetEvilBit(IsParsing());
   DWORD iType = { 0x00000025 };
   DWORD	nSize;
-  DWORD ihObject <min=1>;
+  // Predefined pens, brushes, and fonts need no EMF object-table entry.
+  // Palettes are selected by EMR_SELECTPALETTE instead.
+  DWORD ihObject = {
+    WHITE_BRUSH, LTGRAY_BRUSH, GRAY_BRUSH, DKGRAY_BRUSH,
+    BLACK_BRUSH, NULL_BRUSH, DC_BRUSH,
+    WHITE_PEN, BLACK_PEN, NULL_PEN, DC_PEN,
+    OEM_FIXED_FONT, ANSI_FIXED_FONT, ANSI_VAR_FONT, SYSTEM_FONT,
+    DEVICE_DEFAULT_FONT, SYSTEM_FIXED_FONT, DEFAULT_GUI_FONT
+  };
+  SetEvilBit(previousStockObjectEvilState);
 
   local int64 recordSize = FTell() - recordStart;
   local uint paddingSize = Align4(recordSize) - recordSize;
@@ -3803,6 +3813,7 @@ local DWORD supportedRecordTypes[] = {
   EMR_EXCLUDECLIPRECT,
   EMR_INTERSECTCLIPRECT,
   EMR_SAVEDC,
+  EMR_SELECTOBJECT,
   EMR_PIXELFORMAT,
   EMR_ANGLEARC,
   EMR_ELLIPSE,
