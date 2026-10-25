@@ -1991,7 +1991,10 @@ typedef struct tagEMRPOLYBEZIER {
   DWORD iType = { 0x00000002 };
   DWORD nSize;
   RECTL rclBounds;
-  DWORD cntPoints = { 4 };
+  // Generated Bezier counts stay 1+3k; parsed counts keep baseline policy.
+  local int previousCountEvilState = SetEvilBit(IsParsing());
+  DWORD cntPoints = { 4, 7, 10 };
+  SetEvilBit(previousCountEvilState);
   POINTL aPoints[cntPoints];
 
   local int64 recordSize = FTell() - recordStart;
@@ -2014,7 +2017,10 @@ typedef struct tagEMRPOLYBEZIER16 {
   DWORD iType = { 0x00000055 };
   DWORD nSize;
   RECTL rclBounds;
-  DWORD cntPoints = { 4 };
+  // Generated Bezier counts stay 1+3k; parsed counts keep baseline policy.
+  local int previousCountEvilState = SetEvilBit(IsParsing());
+  DWORD cntPoints = { 4, 7, 10 };
+  SetEvilBit(previousCountEvilState);
   POINTS aPoints[cntPoints];
 
   local int64 recordSize = FTell() - recordStart;
@@ -2037,7 +2043,10 @@ typedef struct tagEMRPOLYBEZIERTO {
   DWORD iType = { 0x00000005 };
   DWORD nSize;
   RECTL rclBounds;
-  DWORD cntPoints = { 3 };
+  // Generated BezierTo counts stay 3k; parsed counts keep baseline policy.
+  local int previousCountEvilState = SetEvilBit(IsParsing());
+  DWORD cntPoints = { 3, 6, 9 };
+  SetEvilBit(previousCountEvilState);
   POINTL aPoints[cntPoints];
 
   local int64 recordSize = FTell() - recordStart;
@@ -2060,7 +2069,10 @@ typedef struct tagEMRPOLYBEZIERTO16 {
   DWORD iType = { 0x00000058 };
   DWORD nSize;
   RECTL rclBounds;
-  DWORD cntPoints = { 3 };
+  // Generated BezierTo counts stay 3k; parsed counts keep baseline policy.
+  local int previousCountEvilState = SetEvilBit(IsParsing());
+  DWORD cntPoints = { 3, 6, 9 };
+  SetEvilBit(previousCountEvilState);
   POINTS aPoints[cntPoints];
 
   local int64 recordSize = FTell() - recordStart;
