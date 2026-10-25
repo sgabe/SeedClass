@@ -1286,6 +1286,25 @@ typedef struct tagEMROFFSETCLIPRGN {
   FSeek(recordEnd);
 } EMROFFSETCLIPRGN;
 
+/** 2.3.2 EMR_SETMETARGN Record (no parameters)
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/0ca0d18e-324e-452f-9a41-26e1a82e3e03
+ */
+typedef struct tagEMRSETMETARGN {
+  local int64 recordStart = FTell();
+  local int previousMetaRgnEvilState = SetEvilBit(false);
+  DWORD iType = { 0x0000001C };
+  DWORD nSize;
+
+  local int64 recordEnd = FTell();
+  AssertValidEmfRecordSize(recordEnd - recordStart);
+  FSeek(recordStart + 4);
+  local int previousEvilState = SetEvilBit(false);
+  DWORD nSize = { (DWORD)(recordEnd - recordStart) };
+  SetEvilBit(previousEvilState);
+  FSeek(recordEnd);
+  SetEvilBit(previousMetaRgnEvilState);
+} EMRSETMETARGN;
+
 /** 2.3.2.5 EMR_SELECTCLIPPATH Record
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/4a26bcf8-6607-4a09-8ec3-a8768eadc8e8
  */
@@ -3769,6 +3788,7 @@ local DWORD supportedRecordTypes[] = {
   EMR_SETTEXTCOLOR,
   EMR_SETBKCOLOR,
   EMR_OFFSETCLIPRGN,
+  EMR_SETMETARGN,
   EMR_MOVETOEX,
   EMR_EXCLUDECLIPRECT,
   EMR_INTERSECTCLIPRECT,
@@ -3955,6 +3975,9 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
 
   } else if (recordType == EMR_OFFSETCLIPRGN) {
     EMROFFSETCLIPRGN OffsetClipRgn;
+
+  } else if (recordType == EMR_SETMETARGN) {
+    EMRSETMETARGN SetMetaRgn;
 
   } else if (recordType == EMR_MOVETOEX) {
     EMRMOVETOEX MoveToEx;
