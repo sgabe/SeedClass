@@ -3875,6 +3875,7 @@ local DWORD supportedRecordTypes[] = {
   EMR_SAVEDC,
   EMR_SELECTOBJECT,
   EMR_CREATEPEN,
+  EMR_CREATEBRUSHINDIRECT,
   EMR_BEGINPATH,
   EMR_PIXELFORMAT,
   EMR_ANGLEARC,
@@ -4173,7 +4174,38 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
     }
 
   } else if (recordType == EMR_CREATEBRUSHINDIRECT) {
-    EMRCREATEBRUSHINDIRECT CreateBrushIndirect;
+    if (IsParsing()) {
+      EMRCREATEBRUSHINDIRECT CreateBrushIndirect;
+    } else {
+      local int previousBrushSequenceEvilState = SetEvilBit(false);
+      struct {
+        DWORD iType = { EMR_CREATEBRUSHINDIRECT };
+        DWORD nSize = { 24 };
+        DWORD ihBrush = { 1 };
+        DWORD style = { 0 }; // BS_SOLID.
+        DWORD color = { 0x000000FF, 0x0000FF00, 0x00FF0000 };
+        DWORD hatch = { 0 }; // Ignored for BS_SOLID.
+      } CreatedBrush;
+      struct {
+        DWORD iType = { EMR_SELECTOBJECT };
+        DWORD nSize = { 12 };
+        DWORD ihObject = { 1 };
+      } SelectCreatedBrush;
+      EMRRECTANGLE BrushRectangle;
+      struct {
+        DWORD iType = { EMR_SELECTOBJECT };
+        DWORD nSize = { 12 };
+        DWORD ihObject = { WHITE_BRUSH };
+      } DeselectCreatedBrush;
+      struct {
+        DWORD iType = { EMR_DELETEOBJECT };
+        DWORD nSize = { 12 };
+        DWORD ihObject = { 1 };
+      } DeleteCreatedBrush;
+      generatedHandleCount = 2;
+      recCnt += 4;
+      SetEvilBit(previousBrushSequenceEvilState);
+    }
 
   } else if (recordType == EMR_DELETEOBJECT) {
     EMRDELETEOBJECT DeleteObject;
