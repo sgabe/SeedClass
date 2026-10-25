@@ -3874,6 +3874,7 @@ local DWORD supportedRecordTypes[] = {
   EMR_INTERSECTCLIPRECT,
   EMR_SAVEDC,
   EMR_SELECTOBJECT,
+  EMR_CREATEPEN,
   EMR_BEGINPATH,
   EMR_PIXELFORMAT,
   EMR_ANGLEARC,
@@ -3979,6 +3980,7 @@ if (IsParsing()) {
 }
 
 // Compound body items advance the count for every record they emit.
+local uint generatedHandleCount = 1; // Reserved index zero; slot one is reused after deletion.
 local uint recCnt = 0;
 for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
   local DWORD recordType = 0;
@@ -4125,7 +4127,50 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
     EMRSELECTOBJECT SelectObject;
 
   } else if (recordType == EMR_CREATEPEN) {
-    EMRCREATEPEN CreatePen;
+    if (IsParsing()) {
+      EMRCREATEPEN CreatePen;
+    } else {
+      local int previousPenSequenceEvilState = SetEvilBit(false);
+      struct {
+        DWORD iType = { EMR_CREATEPEN };
+        DWORD nSize = { 28 };
+        DWORD ihPen = { 1 };
+        DWORD lopnStyle = { 0 }; // PS_SOLID.
+        LONG widthX = { 1 };
+        LONG widthY = { 0 };
+        DWORD color = { 0x00000000, 0x000000FF, 0x00FF0000 };
+      } CreatedPen;
+      struct {
+        DWORD iType = { EMR_SELECTOBJECT };
+        DWORD nSize = { 12 };
+        DWORD ihObject = { 1 };
+      } SelectCreatedPen;
+      struct {
+        DWORD iType = { EMR_MOVETOEX };
+        DWORD nSize = { 16 };
+        LONG x = { 40 };
+        LONG y = { 60 };
+      } PenMoveTo;
+      struct {
+        DWORD iType = { EMR_LINETO };
+        DWORD nSize = { 16 };
+        LONG x = { 120 };
+        LONG y = { 140 };
+      } PenLineTo;
+      struct {
+        DWORD iType = { EMR_SELECTOBJECT };
+        DWORD nSize = { 12 };
+        DWORD ihObject = { BLACK_PEN };
+      } DeselectCreatedPen;
+      struct {
+        DWORD iType = { EMR_DELETEOBJECT };
+        DWORD nSize = { 12 };
+        DWORD ihObject = { 1 };
+      } DeleteCreatedPen;
+      generatedHandleCount = 2;
+      recCnt += 5;
+      SetEvilBit(previousPenSequenceEvilState);
+    }
 
   } else if (recordType == EMR_CREATEBRUSHINDIRECT) {
     EMRCREATEBRUSHINDIRECT CreateBrushIndirect;
@@ -4406,6 +4451,12 @@ DWORD nBytes = { (DWORD)file_size };
 // A final compound item can exceed the original record budget.
 FSeek(0x34);
 DWORD nRecords = { recCnt + 2 }; // Include EMR_HEADER and EMR_EOF.
+if (IsParsing()) {
+  // Preserve the handle table size declared by an input file.
+} else {
+  FSeek(0x38);
+  WORD nHandles = { (WORD)generatedHandleCount };
+}
 SetEvilBit(previousFileSizeEvilState);
 
 // Check file size.
