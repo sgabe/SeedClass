@@ -1881,11 +1881,19 @@ typedef struct tagEMRGRADIENTFILL {
   DWORD iType = { 0x00000076 };
   DWORD nSize;
   RECTL rclBounds;
-  DWORD nVer = { 2 };
-  DWORD nTri = { 1 };
+  // Keep generated counts bounded and modes rectangle-only; nVer >= 2 keeps
+  // the default 0/1 rectangle indexes below nVer.
+  local int previousCountEvilState = SetEvilBit(IsParsing());
+  DWORD nVer = { 2, 3, 4 };
+  DWORD nTri = { 1, 2, 3 };
   GradientFill ulMode = { GRADIENT_FILL_RECT_H, GRADIENT_FILL_RECT_V };
+  SetEvilBit(previousCountEvilState);
   TRIVERTEX vertices[nVer];
+  // Keep generated GradientRectangle indexes within the vertex array.
+  local int previousRectangleEvilState = SetEvilBit(IsParsing());
   GRADIENT_RECT rectangles[nTri];
+  SetEvilBit(previousRectangleEvilState);
+  // Required rectangle-mode padding, one ignored DWORD per object.
   DWORD vertexPadding[nTri];
 
   local int64 recordSize = FTell() - recordStart;
