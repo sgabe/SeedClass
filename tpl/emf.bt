@@ -1432,7 +1432,7 @@ typedef struct {
   DWORD dSignature = { 0x464D4520 };                   // EMF
   DWORD nVersion = { 0x00010000 };
   DWORD nBytes = { 0 };                                // Patched with the final metafile size.
-  local int previousRecordCountEvilState = SetEvilBit(false);
+  local int previousRecordCountEvilState = SetEvilBit(IsParsing());
   DWORD nRecords <min=3, max=16>;                      // Header + at least one body record + EOF.
   SetEvilBit(previousRecordCountEvilState);
   WORD  nHandles = { 0x0001 };                         // Handle table contains reserved index zero only.
@@ -3224,7 +3224,9 @@ typedef struct tagEMRRESTOREDC {
   local int64 recordStart = FTell();
   DWORD iType = { 0x00000022 };
   DWORD nSize;
-  DWORD SavedDC;
+  local int previousSavedDCEvilState = SetEvilBit(IsParsing());
+  LONG SavedDC = { -1 }; // Restore the most recently saved device context.
+  SetEvilBit(previousSavedDCEvilState);
 
   local int64 recordSize = FTell() - recordStart;
   local uint paddingSize = Align4(recordSize) - recordSize;
@@ -3910,14 +3912,25 @@ if (EmfHeader.nRecords < 2) {
   Warning( "EMF record count must include EMR_HEADER and EMR_EOF." );
   return -1;
 }
+if (IsParsing()) {
+  Assert(EmfHeader.nRecords <= FileSize() / 8,
+         "EMF record count cannot exceed the number of minimum-size records in the file.");
+}
 
+// Compound body items advance the count for every record they emit.
 local uint recCnt = 0;
 for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
-  local int previousRecordTypeEvilState = SetEvilBit(false);
-  DWORD generatedRecordType <values=supportedRecordTypes>;
-  FSkip(-4);
-  local DWORD recordType = ReadUInt(FTell(), supportedRecordTypes);
-  SetEvilBit(previousRecordTypeEvilState);
+  local DWORD recordType = 0;
+  if (IsParsing()) {
+    // Parse existing records independently, including sequence continuation records.
+    recordType = ReadUInt(FTell());
+  } else {
+    local int previousRecordTypeEvilState = SetEvilBit(false);
+    DWORD generatedRecordType <values=supportedRecordTypes>;
+    FSkip(-4);
+    recordType = ReadUInt(FTell(), supportedRecordTypes);
+    SetEvilBit(previousRecordTypeEvilState);
+  }
 
   if (recordType == EMR_POLYBEZIER) {
     EMRPOLYBEZIER PolyBezier;
@@ -4010,7 +4023,19 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
     EMRINTERSECTCLIPRECT InterSectClipRect;
 
   } else if (recordType == EMR_SAVEDC) {
+    local int previousSequenceEvilState = SetEvilBit(false);
     EMRSAVEDC SaveDC;
+    if (IsParsing()) {
+      // Following input records are handled separately by the dispatcher.
+    } else {
+      // Keep standalone and nested saves available as well as short restore cases.
+      if (Random(2)) {
+        EMRSETBKCOLOR SavedBackgroundColor;
+        EMRRESTOREDC RestoreSavedDC;
+        recCnt += 2;
+      }
+    }
+    SetEvilBit(previousSequenceEvilState);
 
   } else if (recordType == EMR_RESTOREDC) {
     EMRRESTOREDC RestoreDC;
@@ -4260,6 +4285,9 @@ Assert(file_size <= 0xFFFFFFFF && (file_size & 3) == 0,
 FSeek(0x30);
 local int previousFileSizeEvilState = SetEvilBit(false);
 DWORD nBytes = { (DWORD)file_size };
+// A final compound item can exceed the original record budget.
+FSeek(0x34);
+DWORD nRecords = { recCnt + 2 }; // Include EMR_HEADER and EMR_EOF.
 SetEvilBit(previousFileSizeEvilState);
 
 // Check file size.
