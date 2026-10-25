@@ -2294,9 +2294,12 @@ typedef struct tagEMRPOLYPOLYLINE {
   DWORD iType       = { 0x00000007 };
   DWORD nSize;
   RECTL rclBounds;
+  // Keep generated counts consistent with the single aPolyCounts entry.
+  local int previousCountEvilState = SetEvilBit(IsParsing());
   DWORD nPolys      = { 1 };
   DWORD cntPoints   = { 2 };
   DWORD aPolyCounts = { 2 };
+  SetEvilBit(previousCountEvilState);
   POINTL aPoints[cntPoints];
 
   local int64 recordSize = FTell() - recordStart;
