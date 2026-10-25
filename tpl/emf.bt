@@ -4329,19 +4329,30 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
         } PathTriangle;
         EMRCLOSEFIGURE CloseTriangleFigure;
         EMRENDPATH EndTrianglePath;
-        EMRSTROKEPATH StrokeTrianglePath;
+        // The closed triangle is outlined, or outlined and filled by one record.
+        local DWORD trianglePaintRecordTypes[] = { EMR_STROKEPATH, EMR_STROKEANDFILLPATH };
+        DWORD generatedTrianglePaintType <values=trianglePaintRecordTypes>;
+        FSkip(-4);
+        local DWORD trianglePaintType = ReadUInt(FTell(), trianglePaintRecordTypes);
+        if (trianglePaintType == EMR_STROKEANDFILLPATH) {
+          EMRSTROKEANDFILLPATH StrokeAndFillTrianglePath;
+        } else {
+          EMRSTROKEPATH StrokeTrianglePath;
+        }
         recCnt += 4;
       } else {
         EMRRECTANGLE PathRectangle;
         EMRENDPATH EndRectanglePath;
 
-        // A completed path is consumed exactly once, by filling or stroking it.
-        local DWORD pathPaintRecordTypes[] = { EMR_FILLPATH, EMR_STROKEPATH };
+        // A completed path is consumed exactly once, by filling, stroking, or both.
+        local DWORD pathPaintRecordTypes[] = { EMR_FILLPATH, EMR_STROKEPATH, EMR_STROKEANDFILLPATH };
         DWORD generatedPathPaintType <values=pathPaintRecordTypes>;
         FSkip(-4);
         local DWORD pathPaintType = ReadUInt(FTell(), pathPaintRecordTypes);
         if (pathPaintType == EMR_FILLPATH) {
           EMRFILLPATH FillRectanglePath;
+        } else if (pathPaintType == EMR_STROKEANDFILLPATH) {
+          EMRSTROKEANDFILLPATH StrokeAndFillRectanglePath;
         } else {
           EMRSTROKEPATH StrokeRectanglePath;
         }
