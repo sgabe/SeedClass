@@ -717,10 +717,13 @@ typedef struct tagLOGPEN {
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/5ca68a15-1811-45b6-a51b-5e40d1055ccc
  */
 typedef struct tagREGIONDATAHEADER {
+  // Keep generated header metadata consistent with the one serialized RectL.
+  local int previousHeaderEvilState = SetEvilBit(IsParsing());
   DWORD nSize    = { 0x00000020 };
   DWORD iType    = { 0x00000001 };
   DWORD cntRects = { 0x00000001 };
   DWORD rgnSize  = { 0x00000010 };
+  SetEvilBit(previousHeaderEvilState);
   RECTL rgnBounds;
 } REGIONDATAHEADER;
 
