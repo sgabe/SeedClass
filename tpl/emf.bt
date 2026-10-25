@@ -1871,7 +1871,9 @@ typedef struct tagEMRPAINTRGN {
   DWORD nSize;
   RECTL rclBounds;
   DWORD rgnDataSize = { 0x00000030 };
+  local int64 regionDataStart = FTell();
   REGIONDATA rgnData;
+  local int64 regionDataEnd = FTell();
 
   local int64 recordSize = FTell() - recordStart;
   local uint paddingSize = Align4(recordSize) - recordSize;
@@ -1881,6 +1883,12 @@ typedef struct tagEMRPAINTRGN {
   FSeek(recordStart + 4);
   local int previousEvilState = SetEvilBit(false);
   DWORD nSize = { (DWORD)(recordEnd - recordStart) };
+  if (IsParsing()) {
+    // Preserve the existing input parsing policy for the declared region length.
+  } else {
+    FSeek(recordStart + 24);
+    DWORD rgnDataSize = { (DWORD)(regionDataEnd - regionDataStart) };
+  }
   SetEvilBit(previousEvilState);
   FSeek(recordEnd);
 } EMRPAINTRGN;
