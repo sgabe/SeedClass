@@ -4188,20 +4188,37 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
     if (IsParsing()) {
       // Parse the path geometry and completion records on subsequent iterations.
     } else {
-      EMRRECTANGLE PathRectangle;
-      EMRENDPATH EndRectanglePath;
-
-      // A completed path is consumed exactly once, by filling or stroking it.
-      local DWORD pathPaintRecordTypes[] = { EMR_FILLPATH, EMR_STROKEPATH };
-      DWORD generatedPathPaintType <values=pathPaintRecordTypes>;
-      FSkip(-4);
-      local DWORD pathPaintType = ReadUInt(FTell(), pathPaintRecordTypes);
-      if (pathPaintType == EMR_FILLPATH) {
-        EMRFILLPATH FillRectanglePath;
+      if (Random(2)) {
+        // An open, bounded triangle exercises explicit figure closing.
+        struct {
+          DWORD iType = { EMR_POLYLINE };
+          DWORD nSize = { 52 };
+          RECTL rclBounds;
+          DWORD cntPoints = { 3 };
+          struct { LONG x = { 40 }; LONG y = { 60 }; } FirstPoint;
+          struct { LONG x = { 120 }; LONG y = { 60 }; } SecondPoint;
+          struct { LONG x = { 80 }; LONG y = { 140 }; } ThirdPoint;
+        } PathTriangle;
+        EMRCLOSEFIGURE CloseTriangleFigure;
+        EMRENDPATH EndTrianglePath;
+        EMRSTROKEPATH StrokeTrianglePath;
+        recCnt += 4;
       } else {
-        EMRSTROKEPATH StrokeRectanglePath;
+        EMRRECTANGLE PathRectangle;
+        EMRENDPATH EndRectanglePath;
+
+        // A completed path is consumed exactly once, by filling or stroking it.
+        local DWORD pathPaintRecordTypes[] = { EMR_FILLPATH, EMR_STROKEPATH };
+        DWORD generatedPathPaintType <values=pathPaintRecordTypes>;
+        FSkip(-4);
+        local DWORD pathPaintType = ReadUInt(FTell(), pathPaintRecordTypes);
+        if (pathPaintType == EMR_FILLPATH) {
+          EMRFILLPATH FillRectanglePath;
+        } else {
+          EMRSTROKEPATH StrokeRectanglePath;
+        }
+        recCnt += 3;
       }
-      recCnt += 3;
     }
     SetEvilBit(previousPathSequenceEvilState);
 
