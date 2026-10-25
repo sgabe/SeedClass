@@ -1117,9 +1117,22 @@ typedef struct tagEMRSTRETCHDIBITS {
   local int previousBitmapEvilState = SetEvilBit(false);
   local uint emrSize = 0x00000050;
   local uint bmiSize = 0x00000028;
+  local uint bitmapBitCount = 24;
+  if (IsParsing()) {
+    bitmapBitCount = ReadUShort(recordStart + emrSize + 14);
+  } else {
+    if (Random(2)) {
+      bitmapBitCount = 32;
+    }
+  }
+  Assert(bitmapBitCount == 24 || bitmapBitCount == 32,
+         "This bitmap case supports 24-bit and 32-bit BI_RGB.");
   local int bitmapWidth = 3;
+  if (bitmapBitCount == 32) {
+    bitmapWidth = 4;
+  }
   local int bitmapHeight = 2;
-  local uint bitmapStride = (uint)Align4(bitmapWidth * 3);
+  local uint bitmapStride = (uint)Align4(bitmapWidth * (bitmapBitCount / 8));
   local uint bitmapBitsSize = bitmapStride * bitmapHeight;
 
   DWORD iType = { 0x00000051 };
@@ -1140,14 +1153,14 @@ typedef struct tagEMRSTRETCHDIBITS {
   LONG cxDest = { 64 };
   LONG cyDest = { 64 };
 
-  // This 24-bit BI_RGB case has a BITMAPINFOHEADER and no color table.
+  // These BI_RGB cases have a BITMAPINFOHEADER and no color table.
   FSeek(recordStart + offBmiSrc);
   struct {
     DWORD biSize = { bmiSize };
     LONG biWidth = { bitmapWidth };
-    LONG biHeight = { bitmapHeight }; // Positive height: bottom-up rows.
+    LONG biHeight = { bitmapHeight, -bitmapHeight }; // Bottom-up or top-down rows.
     WORD biPlanes = { 1 };
-    WORD biBitCount = { 24 };
+    WORD biBitCount = { (WORD)bitmapBitCount };
     DWORD biCompression = { BI_RGB };
     DWORD biSizeImage = { bitmapBitsSize };
     LONG biXPelsPerMeter = { 0 };
@@ -1159,7 +1172,7 @@ typedef struct tagEMRSTRETCHDIBITS {
          "Source bitmap header length must match cbBmiSrc.");
 
   FSeek(recordStart + offBitsSrc);
-  // Each bottom-up row has three BGR pixels followed by three padding bytes.
+  // Rows contain BGR pixels plus DWORD padding, or four-byte BGRX pixels.
   UBYTE BitmapBits[bitmapBitsSize];
   Assert(FTell() - recordStart - offBitsSrc == cbBitsSrc,
          "Source pixels and row padding must match cbBitsSrc.");
