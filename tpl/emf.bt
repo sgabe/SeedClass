@@ -4,12 +4,13 @@
 //      File: EMF.bt
 //   Authors: Gabor Seljan
 //    E-mail: gabor@seljan.hu
-//   Version: 0.6
+//   Version: 0.8
 //   Purpose: Enhanced Metafile Format (EMF) template.
 //  Category: Image
 // File Mask: *.emf
 //  ID Bytes: 01 00 00 00
 //   History:
+//   0.8   2026-10-25 G Seljan: Expanded coverage and improved quality.
 //   0.7   2026-07-19 G Seljan: New records.
 //   0.6   2026-07-19 G Seljan: Backpatch record sizes.
 //   0.5   2026-07-18 G Seljan: Validity and maintainability improvements.
@@ -2239,9 +2240,11 @@ typedef struct tagEMRPOLYPOLYGON {
   DWORD iType       = { 0x00000008 };
   DWORD nSize;
   RECTL rclBounds;
+  local int previousCountEvilState = SetEvilBit(IsParsing());
   DWORD nPolys      = { 1 };
   DWORD cntPoints   = { 3 };
   DWORD aPolyCounts = { 3 };
+  SetEvilBit(previousCountEvilState);
   POINTL aPoints[cntPoints];
 
   local int64 recordSize = FTell() - recordStart;
