@@ -1656,29 +1656,39 @@ typedef struct tagEMREXTTEXTOUTA {
  */
 typedef struct tagEMREXTTEXTOUTW {
   local int64 recordStart = FTell();
+  local int previousTextEvilState = SetEvilBit(false);
   DWORD iType = { 0x00000054 };
   DWORD	nSize;
   RECTL rclBounds;
-  DWORD iGraphicsMode;
-  FLOAT exScale;
-  FLOAT eyScale;
+  DWORD iGraphicsMode = { 1 }; // GM_COMPATIBLE.
+  // IEEE-754 FLOAT 1.0, encoded as bits for FormatFuzzer's integer-based parser.
+  DWORD exScale = { 0x3F800000 };
+  DWORD eyScale = { 0x3F800000 };
   struct {
-    POINT ptlReference;
-    DWORD nChars <min=0, max=32>;
-    local int offStringPosition = SetEvilBit(false);
+    struct {
+      LONG x = { 40 };
+      LONG y = { 60 };
+    } ptlReference;
+    DWORD nChars = { 3 };
     DWORD offString = { 0x0000004C };
     DWORD fOptions = { 0x00000000 };
-    SetEvilBit(offStringPosition);
     RECTL rcl;
-    local int offDxPosition = SetEvilBit(false);
     DWORD offDx = { (DWORD)(Align4(0x0000004C + nChars * 2)) };
-    SetEvilBit(offDxPosition);
   } wEmrText;
   if (wEmrText.nChars) {
     FSeek(recordStart + wEmrText.offString);
-    WORD bStringBuffer[wEmrText.nChars];
+    // A, Latin small e with acute, and Greek capital omega in UTF-16LE.
+    struct {
+      WORD LatinA = { 0x0041 };
+      WORD LatinEAcute = { 0x00E9 };
+      WORD GreekOmega = { 0x03A9 };
+    } bStringBuffer;
+    WORD StringAlignmentPadding = { 0 };
     FSeek(recordStart + wEmrText.offDx);
-    DWORD OutputDx[wEmrText.nChars];
+    local uint charIndex = 0;
+    for (charIndex = 0; charIndex < wEmrText.nChars; charIndex++) {
+      DWORD OutputDx = { 12 };
+    }
   }
 
   local int64 recordSize = FTell() - recordStart;
@@ -1691,6 +1701,7 @@ typedef struct tagEMREXTTEXTOUTW {
   DWORD nSize = { (DWORD)(recordEnd - recordStart) };
   SetEvilBit(previousEvilState);
   FSeek(recordEnd);
+  SetEvilBit(previousTextEvilState);
 } EMREXTTEXTOUTW;
 
 /** 2.3.5.9 EMR_FILLPATH
@@ -3828,6 +3839,7 @@ local DWORD supportedRecordTypes[] = {
   EMR_SELECTPALETTE,
   EMR_REALIZEPALETTE,
   EMR_EXTFLOODFILL,
+  EMR_EXTTEXTOUTW,
   EMR_LINETO,
   EMR_POLYBEZIER16,
   EMR_POLYGON16,
