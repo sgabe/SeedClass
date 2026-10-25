@@ -3816,6 +3816,7 @@ local DWORD supportedRecordTypes[] = {
   EMR_INTERSECTCLIPRECT,
   EMR_SAVEDC,
   EMR_SELECTOBJECT,
+  EMR_BEGINPATH,
   EMR_PIXELFORMAT,
   EMR_ANGLEARC,
   EMR_ELLIPSE,
@@ -4122,7 +4123,27 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
     EMRSETLAYOUT SetLayout;
 
   } else if (recordType == EMR_BEGINPATH) {
+    local int previousPathSequenceEvilState = SetEvilBit(false);
     EMRBEGINPATH BeginPath;
+    if (IsParsing()) {
+      // Parse the path geometry and completion records on subsequent iterations.
+    } else {
+      EMRRECTANGLE PathRectangle;
+      EMRENDPATH EndRectanglePath;
+
+      // A completed path is consumed exactly once, by filling or stroking it.
+      local DWORD pathPaintRecordTypes[] = { EMR_FILLPATH, EMR_STROKEPATH };
+      DWORD generatedPathPaintType <values=pathPaintRecordTypes>;
+      FSkip(-4);
+      local DWORD pathPaintType = ReadUInt(FTell(), pathPaintRecordTypes);
+      if (pathPaintType == EMR_FILLPATH) {
+        EMRFILLPATH FillRectanglePath;
+      } else {
+        EMRSTROKEPATH StrokeRectanglePath;
+      }
+      recCnt += 3;
+    }
+    SetEvilBit(previousPathSequenceEvilState);
 
   } else if (recordType == EMR_ENDPATH) {
     EMRENDPATH EndPath;
