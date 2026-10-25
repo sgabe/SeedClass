@@ -1415,6 +1415,11 @@ typedef struct tagEMRCOMMENTEMFPLUS_EOF {
  */
 typedef struct {
   local int64 recordStart = FTell();
+  // Keep the terminal record and its empty palette fields valid during generation.
+  local int previousEOFEvilState = SetEvilBit(false);
+  if (IsParsing()) {
+    SetEvilBit(previousEOFEvilState);
+  }
   DWORD iType = { 0x0000000E };    // Record type is EMR_EOF.
   DWORD nSize;
   DWORD nPalEntries = { 0 };       // Number of palette entries.
@@ -1435,6 +1440,7 @@ typedef struct {
   DWORD SizeLast = { (DWORD)(recordEnd - recordStart) };
   SetEvilBit(previousEvilState);
   FSeek(recordEnd);
+  SetEvilBit(previousEOFEvilState);
 } EMREOF;
 
 typedef struct tagSIZEL_DEVICE {
