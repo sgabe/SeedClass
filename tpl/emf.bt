@@ -1466,6 +1466,11 @@ typedef struct tagSIZEL_MILLIMETERS {
   LONG cy = { 0x000001A7 };
 } SIZEL_MILLIMETERS;
 
+int64 DeviceToFrame( int64 deviceCoordinate, int64 millimeters, int64 devicePixels ) {
+  // Round a non-negative reference-device pixel coordinate to the nearest .01 mm.
+  return (deviceCoordinate * millimeters * 200 + devicePixels) / (devicePixels * 2);
+}
+
 /** 2.3.4.2.1 EMR_HEADER Record
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/80c0684b-9a0e-4bdb-8d6d-0e5a9e9673e7
  */
@@ -1504,6 +1509,18 @@ typedef struct {
   FSeek(recordStart + 4);
   local int previousEvilState = SetEvilBit(false);
   DWORD nSize = { (DWORD)(recordEnd - recordStart) };
+  if (IsParsing()) {
+    // Preserve the picture frame declared by an input file.
+  } else {
+    // Convert the inclusive device bounds to the physical frame in .01 mm units.
+    Assert(szlDevice.cx > 0 && szlDevice.cy > 0,
+           "Reference device size must be positive.");
+    FSeek(recordStart + 24);
+    LONG rclFrameLeft = { (LONG)DeviceToFrame(rclBounds.left, szlMillimeters.cx, szlDevice.cx) };
+    LONG rclFrameTop = { (LONG)DeviceToFrame(rclBounds.top, szlMillimeters.cy, szlDevice.cy) };
+    LONG rclFrameRight = { (LONG)DeviceToFrame(rclBounds.right, szlMillimeters.cx, szlDevice.cx) };
+    LONG rclFrameBottom = { (LONG)DeviceToFrame(rclBounds.bottom, szlMillimeters.cy, szlDevice.cy) };
+  }
   SetEvilBit(previousEvilState);
   FSeek(recordEnd);
   SetEvilBit(previousHeaderEvilState); // Restore body generation and parsing policy.
