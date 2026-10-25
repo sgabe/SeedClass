@@ -4090,10 +4090,24 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
       // Following input records are handled separately by the dispatcher.
     } else {
       // Keep standalone and nested saves available as well as short restore cases.
-      if (Random(2)) {
+      local uint savedSequenceKind = Random(3);
+      if (savedSequenceKind == 1) {
         EMRSETBKCOLOR SavedBackgroundColor;
         EMRRESTOREDC RestoreSavedDC;
         recCnt += 2;
+      } else if (savedSequenceKind == 2) {
+        // Save the original clip, consume a complete path, draw, then restore it.
+        EMRBEGINPATH BeginClipPath;
+        EMRRECTANGLE ClipRectangle;
+        EMRENDPATH EndClipPath;
+        struct {
+          DWORD iType = { EMR_SELECTCLIPPATH };
+          DWORD nSize = { 12 };
+          DWORD iRegionMode = { RGN_COPY };
+        } SelectRectangleClip;
+        EMRELLIPSE ClippedEllipse;
+        EMRRESTOREDC RestoreClipDC;
+        recCnt += 6;
       }
     }
     SetEvilBit(previousSequenceEvilState);
