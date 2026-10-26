@@ -4213,7 +4213,8 @@ local DWORD supportedRecordTypes[] = {
   EMR_DRAWESCAPE,
   EMR_EXTESCAPE,
   EMR_GRADIENTFILL,
-  EMR_NAMEDESCAPE
+  EMR_NAMEDESCAPE,
+  EMR_FORCEUFIMAPPING
 };
 
 LittleEndian();
@@ -4783,6 +4784,9 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
 
   } else if (recordType == EMR_COLORCORRECTPALETTE) {
     EMRCOLORCORRECTPALETTE ColorCorrectPalette;
+
+  } else if (recordType == EMR_FORCEUFIMAPPING) {
+    EMRFORCEUFIMAPPING ForceUfiMapping;
 
   //} else if (recordType == 0x7A) {
   //  EMRCREATECOLORSPACEW CreateColorSpaceW;
