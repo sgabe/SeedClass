@@ -3494,6 +3494,10 @@ typedef struct tagEMRRESTOREDC {
   local int previousSavedDCEvilState = SetEvilBit(IsParsing());
   LONG SavedDC = { -1 }; // Restore the most recently saved device context.
   SetEvilBit(previousSavedDCEvilState);
+  if (IsParsing()) {
+    Assert(SavedDC < 0,
+           "EMR_RESTOREDC SavedDC must be negative.");
+  }
 
   local int64 recordSize = FTell() - recordStart;
   local uint paddingSize = Align4(recordSize) - recordSize;
