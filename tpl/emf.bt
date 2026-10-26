@@ -2373,11 +2373,38 @@ typedef struct tagEMRPOLYPOLYGON16 {
   DWORD iType = { 0x0000005B };
   DWORD nSize;
   RECTL rclBounds;
-  local int previousCountEvilState = SetEvilBit(false);
+  // Input records keep their declared NumberOfPolygons, Count, and full
+  // PolygonPointCount array; generation still emits one three-point polygon.
+  local int previousCountEvilState = SetEvilBit(IsParsing());
   DWORD nPolys = { 1 };
   DWORD cntPoints = { 3 };
-  DWORD aPolyCounts = { 3 };
   SetEvilBit(previousCountEvilState);
+  local int previousPolyCountEvilState;
+  local int64 polygonIndex;
+  local int64 polygonPointTotal = 0;
+  if (IsParsing()) {
+    local int64 declaredSize = (int64)nSize;
+    local int64 declaredPolys = (int64)nPolys;
+    local int64 declaredCount = (int64)cntPoints;
+    Assert(declaredSize >= 32,
+           "EMR_POLYPOLYGON16 Size must cover its fixed fields.");
+    Assert(declaredSize <= (int64)FileSize() - recordStart,
+           "EMR_POLYPOLYGON16 Size cannot extend past the end of the file.");
+    Assert(declaredPolys * 4 + declaredCount * 4 <= declaredSize - 32,
+           "EMR_POLYPOLYGON16 polygon counts and points must fit within the record Size.");
+    // Sum the counts from the input bytes before declaring the array so the
+    // generated C++ does not need to index the parsed field.
+    for (polygonIndex = 0; polygonIndex < declaredPolys; polygonIndex++) {
+      polygonPointTotal += (int64)ReadUInt(FTell() + polygonIndex * 4);
+    }
+    Assert(polygonPointTotal == declaredCount,
+           "EMR_POLYPOLYGON16 polygon point counts must sum to Count.");
+    DWORD aPolyCounts[nPolys];
+  } else {
+    previousPolyCountEvilState = SetEvilBit(false);
+    DWORD aPolyCount = { 3 }; // Single polygon covering all generated points.
+    SetEvilBit(previousPolyCountEvilState);
+  }
   POINTS aPoints[cntPoints];
 
   local int64 recordSize = FTell() - recordStart;
