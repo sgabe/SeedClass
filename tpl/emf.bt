@@ -2455,11 +2455,42 @@ typedef struct tagEMRPOLYPOLYLINE16 {
   DWORD iType = { 0x0000005A };
   DWORD nSize;
   RECTL rclBounds;
-  local int previousCountEvilState = SetEvilBit(false);
+  // Input records keep their declared NumberOfPolylines, Count, and full
+  // PolylinePointCount array; generation still emits one two-point polyline.
+  local int previousCountEvilState = SetEvilBit(IsParsing());
   DWORD nPolys = { 1 };
   DWORD cntPoints = { 2 };
-  DWORD aPolyCounts = { 2 };
   SetEvilBit(previousCountEvilState);
+  local int previousPolyCountEvilState;
+  if (IsParsing()) {
+    local int64 declaredSize = (int64)nSize;
+    local int64 declaredPolys = (int64)nPolys;
+    local int64 declaredCount = (int64)cntPoints;
+    Assert(declaredSize >= 32,
+           "EMR_POLYPOLYLINE16 Size must cover its fixed fields.");
+    Assert(declaredSize <= (int64)FileSize() - recordStart,
+           "EMR_POLYPOLYLINE16 Size cannot extend past the end of the file.");
+    Assert(declaredPolys * 4 <= declaredSize - 32,
+           "EMR_POLYPOLYLINE16 PolylinePointCount must fit within the record Size.");
+    Assert(declaredCount * 4 <= declaredSize - 32 - declaredPolys * 4,
+           "EMR_POLYPOLYLINE16 Count points must fit within the record Size.");
+    // Sum the source DWORDs before declaring the parsed array. Each term is at
+    // most 0xFFFFFFFF; stop once the sum exceeds Count so the int64
+    // accumulator cannot overflow.
+    local int64 polyCountsStart = FTell();
+    local int64 polyPointTotal = 0;
+    local int64 polyIndex = 0;
+    for (polyIndex = 0; polyIndex < declaredPolys && polyPointTotal <= declaredCount; polyIndex++) {
+      polyPointTotal += (int64)ReadUInt(polyCountsStart + polyIndex * 4);
+    }
+    Assert(polyPointTotal == declaredCount,
+           "EMR_POLYPOLYLINE16 PolylinePointCount values must sum to Count.");
+    DWORD aPolyCounts[nPolys];
+  } else {
+    previousPolyCountEvilState = SetEvilBit(false);
+    DWORD aPolyCounts = { 2 };
+    SetEvilBit(previousPolyCountEvilState);
+  }
   POINTS aPoints[cntPoints];
 
   local int64 recordSize = FTell() - recordStart;
