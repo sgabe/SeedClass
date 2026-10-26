@@ -3421,12 +3421,35 @@ typedef struct tagEMRCOLORMATCHTOTARGETW {
 
   DWORD iType = { 0x00000079 };
   DWORD nSize;
-  ColorSpace dwAction;
-  ColorMatchToTarget dwFlags;
-  DWORD cbName <max=32>;
-  DWORD cbData <max=32>;
-  BYTE data[cbName + cbData];
-  BYTE alignmentPadding[Align4(cbName + cbData) - (cbName + cbData)];
+  if (IsParsing()) {
+    ColorSpace dwAction;
+    ColorMatchToTarget dwFlags;
+    DWORD cbName <max=32>;
+    DWORD cbData <max=32>;
+    local int64 declaredSize = (int64)nSize;
+    local int64 declaredDataBytes = (int64)cbName + (int64)cbData;
+    Assert(declaredDataBytes <= declaredSize - 24,
+           "EMR_COLORMATCHTOTARGETW Data must fit within the record Size.");
+    BYTE data[cbName + cbData];
+    BYTE alignmentPadding[Align4(cbName + cbData) - (cbName + cbData)];
+  } else {
+    // GDI rejects CS_DISABLE and CS_DELETE_TRANSFORM without a preceding
+    // enable, and CS_ENABLE without a profile name. Generate an enable with
+    // a short null-terminated UTF-16 name ("a" or "a.icm") and no raw data;
+    // with cbData 0, dwFlags must be COLORMATCHTOTARGET_NOTEMBEDDED.
+    local int previousColorMatchEvilState = SetEvilBit(false);
+    ColorSpace dwAction = { CS_ENABLE };
+    ColorMatchToTarget dwFlags = { COLORMATCHTOTARGET_NOTEMBEDDED };
+    DWORD cbName = { 4, 12 };
+    DWORD cbData = { 0 };
+    local WORD profileSample[] = { 0x0061, 0x002E, 0x0069, 0x0063, 0x006D };
+    local uint profileIndex = 0;
+    for (profileIndex = 0; profileIndex < cbName / 2 - 1; profileIndex++) {
+      WORD ProfileNameCharacter = { profileSample[profileIndex] };
+    }
+    WORD ProfileNameTerminator = { 0 };
+    SetEvilBit(previousColorMatchEvilState);
+  }
 
   local int64 recordSize = FTell() - recordStart;
   local uint paddingSize = Align4(recordSize) - recordSize;
@@ -4214,7 +4237,8 @@ local DWORD supportedRecordTypes[] = {
   EMR_EXTESCAPE,
   EMR_GRADIENTFILL,
   EMR_NAMEDESCAPE,
-  EMR_FORCEUFIMAPPING
+  EMR_FORCEUFIMAPPING,
+  EMR_COLORMATCHTOTARGETW
 };
 
 LittleEndian();
@@ -4787,6 +4811,9 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
 
   } else if (recordType == EMR_FORCEUFIMAPPING) {
     EMRFORCEUFIMAPPING ForceUfiMapping;
+
+  } else if (recordType == EMR_COLORMATCHTOTARGETW) {
+    EMRCOLORMATCHTOTARGETW ColorMatchToTargetW;
 
   //} else if (recordType == 0x7A) {
   //  EMRCREATECOLORSPACEW CreateColorSpaceW;
