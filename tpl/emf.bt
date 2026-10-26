@@ -1703,27 +1703,64 @@ typedef struct tagEMREXTTEXTOUTA {
   DWORD iType = { 0x00000053 };
   DWORD	nSize;
   RECTL rclBounds;
-  DWORD iGraphicsMode;
-  FLOAT exScale;
-  FLOAT eyScale;
+  // Generated text uses fixed GM_COMPATIBLE scaling and reference values;
+  // input records keep their declared values.
+  local int previousTextEvilState = SetEvilBit(IsParsing());
+  DWORD iGraphicsMode = { 1 }; // GM_COMPATIBLE.
+  // IEEE-754 FLOAT 1.0, encoded as bits for FormatFuzzer's integer-based parser.
+  DWORD exScale = { 0x3F800000 };
+  DWORD eyScale = { 0x3F800000 };
   struct {
-    POINT ptlReference;
-    DWORD nChars <min=0, max=32>;
-    local int offStringPosition = SetEvilBit(false);
-    DWORD offString = { 0x0000004C };
-    DWORD fOptions = { 0x00000000 };
-    SetEvilBit(offStringPosition);
-    RECTL rcl;
-    local int offDxPosition = SetEvilBit(false);
-    DWORD offDx = { (DWORD)(Align4(0x0000004C + nChars)) };
-    SetEvilBit(offDxPosition);
+    struct {
+      LONG x = { 40 };
+      LONG y = { 60 };
+    } ptlReference;
+    if (IsParsing()) {
+      SetEvilBit(previousTextEvilState);
+      DWORD nChars <min=0, max=32>;
+      local int offStringPosition = SetEvilBit(false);
+      // Input text keeps the fixed offset; an empty string may use offset 0.
+      DWORD offString = { 0x0000004C, (DWORD)(nChars ? 0x0000004C : 0) };
+      DWORD fOptions = { 0, 2, 4, 6 }; // Normal, ETO_OPAQUE, ETO_CLIPPED, or both.
+      SetEvilBit(offStringPosition);
+      RECTL rcl;
+      local int offDxPosition = SetEvilBit(false);
+      DWORD offDx = { (DWORD)(Align4(0x0000004C + nChars)),
+                      (DWORD)(nChars ? Align4(0x0000004C + nChars) : 0) };
+      SetEvilBit(offDxPosition);
+    } else {
+      DWORD nChars = { 0, 1, 3, 8, 16 };
+      DWORD offString = { (DWORD)(nChars ? 0x0000004C : 0) };
+      DWORD fOptions = { 0, 2, 4, 6 }; // Normal, ETO_OPAQUE, ETO_CLIPPED, or both.
+      RECTL rcl;
+      DWORD offDx = { nChars ? (DWORD)(Align4(0x0000004C + nChars)) : 0 };
+    }
   } aEmrText;
   if (aEmrText.nChars) {
     FSeek(recordStart + aEmrText.offString);
-    BYTE bStringBuffer[aEmrText.nChars];
+    if (IsParsing()) {
+      BYTE bStringBuffer[aEmrText.nChars];
+    } else {
+      // Repeat ASCII A, B, C, then pad the string to the DWORD-aligned offDx.
+      local BYTE asciiSample[] = { 0x41, 0x42, 0x43 };
+      local uint stringIndex = 0;
+      for (stringIndex = 0; stringIndex < aEmrText.nChars; stringIndex++) {
+        BYTE Character = { asciiSample[stringIndex % 3] };
+      }
+      local uint stringPadding = (uint)(Align4(aEmrText.nChars) - aEmrText.nChars);
+      BYTE StringAlignmentPadding[stringPadding];
+    }
     FSeek(recordStart + aEmrText.offDx);
-    DWORD OutputDx[aEmrText.nChars];
+    if (IsParsing()) {
+      DWORD OutputDx[aEmrText.nChars];
+    } else {
+      local uint charIndex = 0;
+      for (charIndex = 0; charIndex < aEmrText.nChars; charIndex++) {
+        DWORD OutputDx = { 12 };
+      }
+    }
   }
+  SetEvilBit(previousTextEvilState);
 
   local int64 recordSize = FTell() - recordStart;
   local uint paddingSize = Align4(recordSize) - recordSize;
@@ -4136,6 +4173,7 @@ local DWORD supportedRecordTypes[] = {
   EMR_SELECTPALETTE,
   EMR_REALIZEPALETTE,
   EMR_EXTFLOODFILL,
+  EMR_EXTTEXTOUTA,
   EMR_EXTTEXTOUTW,
   EMR_LINETO,
   EMR_POLYBEZIER16,
