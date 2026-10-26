@@ -2768,9 +2768,28 @@ typedef struct tagEMRNAMEDESCAPE {
   DWORD iType = { 0x0000006E };
   DWORD	nSize;
   MetafileEscapes iEscape;
-  DWORD cjDriver;
-  DWORD cjln <min=4, max=4>;
-  WORD driverName = { 0xFF00 };
+  if (IsParsing()) {
+    DWORD cjDriver;
+    DWORD cjln <min=4, max=4>;
+    local int64 declaredSize = (int64)nSize;
+    local int64 declaredEscapeBytes = (int64)cjDriver + (int64)cjln;
+    Assert(declaredEscapeBytes <= declaredSize - 20,
+           "EMR_NAMEDESCAPE DriverName and Data must fit within the record Size.");
+    BYTE DriverName[cjDriver];
+  } else {
+    // Generated driver names are null-terminated UTF-16 strings, so cjDriver
+    // is their even byte length: "D" or "DISPLAY".
+    local int previousDriverEvilState = SetEvilBit(false);
+    DWORD cjDriver = { 4, 16 };
+    DWORD cjln = { 4 };
+    local WORD driverSample[] = { 0x0044, 0x0049, 0x0053, 0x0050, 0x004C, 0x0041, 0x0059 };
+    local uint driverIndex = 0;
+    for (driverIndex = 0; driverIndex < cjDriver / 2 - 1; driverIndex++) {
+      WORD DriverNameCharacter = { driverSample[driverIndex] };
+    }
+    WORD DriverNameTerminator = { 0 };
+    SetEvilBit(previousDriverEvilState);
+  }
   BYTE data[cjln];
 
   local int64 recordSize = FTell() - recordStart;
@@ -4193,7 +4212,8 @@ local DWORD supportedRecordTypes[] = {
   EMR_STRETCHDIBITS,
   EMR_DRAWESCAPE,
   EMR_EXTESCAPE,
-  EMR_GRADIENTFILL
+  EMR_GRADIENTFILL,
+  EMR_NAMEDESCAPE
 };
 
 LittleEndian();
