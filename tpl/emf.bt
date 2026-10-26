@@ -1383,14 +1383,19 @@ typedef struct tagEMRSELECTCLIPPATH {
 // 3. Comment Record Types
 //------------------------------------------------
 
-// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/4a26bcf8-6607-4a09-8ec3-a8768eadc8e8
+/** 2.3.3.1 EMR_COMMENT Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/e081b202-429d-4c34-b21c-a0ad501858a6
+ */
 typedef struct tagEMRCOMMENT {
   local int64 recordStart = FTell();
   local int64 recordOffset = FTell();
 
   DWORD iType = { 0x00000046 };
   DWORD nSize;
+  // Keep generated private comment data small; input lengths are still read as declared.
+  local int previousDataSizeEvilState = SetEvilBit(IsParsing());
   DWORD dataSize <max=3>;
+  SetEvilBit(previousDataSizeEvilState);
   BYTE privateData[dataSize];
   BYTE alignmentPadding[Align4(dataSize) - dataSize];
 
