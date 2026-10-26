@@ -2095,9 +2095,34 @@ typedef struct tagEMRPOLYDRAW {
   DWORD iType = { 0x00000038 };
   DWORD	nSize;
   RECTL rclBounds;
-  DWORD cntPoints <min=1, max=1>;
-  POINTL aPoints[cntPoints];
-  BYTE abTypes[cntPoints];
+  // Input records keep their declared Count and full abTypes array; generation
+  // emits one bounded PT_MOVETO, PT_LINETO, PT_LINETO figure.
+  local int previousCountEvilState = SetEvilBit(IsParsing());
+  DWORD cntPoints = { 3 };
+  SetEvilBit(previousCountEvilState);
+  local int previousFigureEvilState;
+  if (IsParsing()) {
+    local int64 declaredSize = (int64)nSize;
+    local int64 declaredCount = (int64)cntPoints;
+    Assert(declaredSize >= 28,
+           "EMR_POLYDRAW Size must cover its fixed fields.");
+    Assert(declaredSize <= (int64)FileSize() - recordStart,
+           "EMR_POLYDRAW Size cannot extend past the end of the file.");
+    Assert(declaredCount * 9 <= declaredSize - 28,
+           "EMR_POLYDRAW Count points and types must fit within the record Size.");
+    POINTL aPoints[cntPoints];
+    BYTE abTypes[cntPoints];
+  } else {
+    // Points stay inside the default rclBounds (20, 30)-(180, 230).
+    previousFigureEvilState = SetEvilBit(false);
+    struct { LONG x = { 40, 80, 120, 160 }; LONG y = { 60, 100, 140, 180, 220 }; } MoveToPoint;
+    struct { LONG x = { 40, 80, 120, 160 }; LONG y = { 60, 100, 140, 180, 220 }; } FirstLineToPoint;
+    struct { LONG x = { 40, 80, 120, 160 }; LONG y = { 60, 100, 140, 180, 220 }; } SecondLineToPoint;
+    BYTE MoveToType = { 0x06 };         // PT_MOVETO
+    BYTE FirstLineToType = { 0x02 };    // PT_LINETO
+    BYTE SecondLineToType = { 0x02 };   // PT_LINETO
+    SetEvilBit(previousFigureEvilState);
+  }
 
   local int64 recordSize = FTell() - recordStart;
   local uint paddingSize = Align4(recordSize) - recordSize;
@@ -3965,6 +3990,7 @@ local DWORD supportedRecordTypes[] = {
   EMR_POLYLINETO,
   EMR_POLYPOLYLINE,
   EMR_POLYPOLYGON,
+  EMR_POLYDRAW,
   EMR_SETWINDOWEXTEX,
   EMR_SETWINDOWORGEX,
   EMR_SETVIEWPORTEXTEX,
