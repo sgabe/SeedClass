@@ -4565,8 +4565,24 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
     if (IsParsing()) {
       // Parse the path geometry and completion records on subsequent iterations.
     } else {
-      local uint pathSequenceKind = Random(3);
-      if (pathSequenceKind == 2) {
+      local uint pathSequenceKind = Random(4);
+      if (pathSequenceKind == 3) {
+        // One bounded cubic Bezier is flattened into lines, then outlined.
+        struct {
+          DWORD iType = { EMR_POLYBEZIER };
+          DWORD nSize = { 60 };
+          RECTL rclBounds;
+          DWORD cntPoints = { 4 };
+          struct { LONG x = { 40 }; LONG y = { 200 }; } StartPoint;
+          struct { LONG x = { 60 }; LONG y = { 40 }; } FirstControlPoint;
+          struct { LONG x = { 140 }; LONG y = { 220 }; } SecondControlPoint;
+          struct { LONG x = { 160 }; LONG y = { 60 }; } EndPoint;
+        } PathCurve;
+        EMRENDPATH EndCurvePath;
+        EMRFLATTENPATH FlattenCurvePath;
+        EMRSTROKEPATH StrokeFlattenedCurvePath;
+        recCnt += 4;
+      } else if (pathSequenceKind == 2) {
         // Cancel an open path without painting or leaving a pending path.
         EMRRECTANGLE AbortedRectangle;
         EMRABORTPATH AbortRectanglePath;
