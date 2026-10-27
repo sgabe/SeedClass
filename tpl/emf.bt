@@ -2688,6 +2688,67 @@ typedef struct tagEMRSETPIXELV {
   FSeek(recordEnd);
 } EMRSETPIXELV;
 
+/** 2.3.5.37 EMR_SMALLTEXTOUT Record
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/20eee81d-0bd4-42d1-a624-860adfe62358
+ */
+typedef struct tagEMRSMALLTEXTOUT {
+  local int64 recordStart = FTell();
+  DWORD iType = { 0x0000006C };
+  DWORD nSize;
+  // Generated records are ETO_NO_RECT UTF-16 text without Bounds; parsed
+  // records keep their declared options and counts.
+  local int previousTextEvilState = SetEvilBit(IsParsing());
+  LONG x = { 40 };
+  LONG y = { 60 };
+  DWORD cChars = { 1, 2, 3, 4 };
+  DWORD fuOptions = { 0x00000100 }; // ETO_NO_RECT, ETO_SMALL_CHARS clear.
+  DWORD iGraphicsMode = { 1 }; // GM_COMPATIBLE.
+  // IEEE-754 FLOAT 1.0, encoded as bits for FormatFuzzer's integer-based parser.
+  DWORD exScale = { 0x3F800000 };
+  DWORD eyScale = { 0x3F800000 };
+  SetEvilBit(previousTextEvilState);
+  if (IsParsing()) {
+    if ((fuOptions & 0x00000100) == 0) {
+      RECTL Bounds;
+    }
+    local int64 declaredSize = (int64)nSize;
+    local int64 charSize = 2;
+    if (fuOptions & 0x00000200) {
+      charSize = 1; // ETO_SMALL_CHARS.
+    }
+    Assert(declaredSize <= (int64)FileSize() - recordStart,
+           "EMR_SMALLTEXTOUT Size cannot extend past the end of the file.");
+    local int64 textByteCount = (int64)cChars * charSize;
+    Assert(textByteCount <= declaredSize - (FTell() - recordStart),
+           "EMR_SMALLTEXTOUT TextString must fit within the record Size.");
+    if (charSize == 1) {
+      BYTE TextString[cChars];
+    } else {
+      WORD TextString[cChars];
+    }
+  } else {
+    // Repeat A, e-acute, omega without generating unpaired UTF-16 surrogates.
+    local int previousStringEvilState = SetEvilBit(false);
+    local WORD unicodeSample[] = { 0x0041, 0x00E9, 0x03A9 };
+    local uint stringIndex = 0;
+    for (stringIndex = 0; stringIndex < cChars; stringIndex++) {
+      WORD Character = { unicodeSample[stringIndex % 3] };
+    }
+    SetEvilBit(previousStringEvilState);
+  }
+
+  local int64 recordSize = FTell() - recordStart;
+  local uint paddingSize = Align4(recordSize) - recordSize;
+  BYTE EmrAlignmentPadding[paddingSize];
+  local int64 recordEnd = FTell();
+  AssertValidEmfRecordSize(recordEnd - recordStart);
+  FSeek(recordStart + 4);
+  local int previousEvilState = SetEvilBit(false);
+  DWORD nSize = { (DWORD)(recordEnd - recordStart) };
+  SetEvilBit(previousEvilState);
+  FSeek(recordEnd);
+} EMRSMALLTEXTOUT;
+
 /** 2.3.5.38 EMR_STROKEANDFILLPATH
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/2794792a-38b4-4d19-adec-28fc2a6273b2
  */
@@ -4260,6 +4321,7 @@ local DWORD supportedRecordTypes[] = {
   EMR_EXTFLOODFILL,
   EMR_EXTTEXTOUTA,
   EMR_EXTTEXTOUTW,
+  EMR_SMALLTEXTOUT,
   EMR_LINETO,
   EMR_POLYBEZIER16,
   EMR_POLYGON16,
@@ -5026,6 +5088,9 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
       } PolyTextOutA;
       SetEvilBit(previousPolyTextSequenceEvilState);
     }
+
+  } else if (recordType == EMR_SMALLTEXTOUT) {
+    EMRSMALLTEXTOUT SmallTextOut;
 
   } else if (recordType == EMR_CREATECOLORSPACE) {
     EMRCREATECOLORSPACE CreateColorSpace;
