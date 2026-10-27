@@ -4346,7 +4346,8 @@ local DWORD supportedRecordTypes[] = {
   EMR_COLORMATCHTOTARGETW,
   EMR_POLYTEXTOUTA,
   EMR_BITBLT,
-  EMR_SETCOLORADJUSTMENT
+  EMR_SETCOLORADJUSTMENT,
+  EMR_SETDIBITSTODEVICE
 };
 
 LittleEndian();
@@ -5040,7 +5041,66 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
     EMRPLGBLT PlgBlt;
 
   } else if (recordType == EMR_SETDIBITSTODEVICE) {
-    EMRSETDIBITSTODEVICE SetDiBitsToDevice;
+    if (IsParsing()) {
+      EMRSETDIBITSTODEVICE SetDiBitsToDevice;
+    } else {
+      local int previousSetDiBitsSequenceEvilState = SetEvilBit(false);
+      // 120-byte EMR_SETDIBITSTODEVICE: 76 fixed bytes, a 40-byte
+      // BITMAPINFOHEADER at +76, and one 32-bit BI_RGB pixel at +116.
+      // No color table.
+      struct {
+        local int64 recordStart = FTell();
+        DWORD iType = { EMR_SETDIBITSTODEVICE };
+        DWORD nSize = { 120 };
+        // Device bounds for the one-pixel destination at 40,60.
+        LONG rclBoundsLeft   = { 40 };
+        LONG rclBoundsTop    = { 60 };
+        LONG rclBoundsRight  = { 41 };
+        LONG rclBoundsBottom = { 61 };
+        LONG xDest = { 40 };
+        LONG yDest = { 60 };
+        LONG xSrc  = { 0 };
+        LONG ySrc  = { 0 };
+        LONG cxSrc = { 1 };
+        LONG cySrc = { 1 };
+        DWORD offBmiSrc  = { 76 };
+        DWORD cbBmiSrc   = { 40 };
+        DWORD offBitsSrc = { 116 };
+        DWORD cbBitsSrc  = { 4 };
+        DWORD iUsageSrc  = { 0 };   // DIB_RGB_COLORS.
+        DWORD iStartScan = { 0 };
+        DWORD cScans     = { 1 };
+        Assert(FTell() - recordStart == offBmiSrc,
+               "Source bitmap header must start at offBmiSrc.");
+        // Source BITMAPINFOHEADER with no color table.
+        DWORD biSize = { 40 };
+        LONG biWidth  = { 1 };
+        LONG biHeight = { 1 };            // Bottom-up single row.
+        WORD biPlanes = { 1 };
+        WORD biBitCount = { 32 };
+        DWORD biCompression = { BI_RGB }; // 0.
+        DWORD biSizeImage = { 0 };        // Preferred for BI_RGB.
+        LONG biXPelsPerMeter = { 0 };
+        LONG biYPelsPerMeter = { 0 };
+        DWORD biClrUsed = { 0 };
+        DWORD biClrImportant = { 0 };
+        Assert(FTell() - recordStart - offBmiSrc == cbBmiSrc,
+               "Source bitmap header length must match cbBmiSrc.");
+        Assert(FTell() - recordStart == offBitsSrc,
+               "Source pixels must start at offBitsSrc.");
+        // One 32-bit pixel: blue 0, green 0, red 255, unused byte 0.
+        UBYTE PixelBlue     = { 0 };
+        UBYTE PixelGreen    = { 0 };
+        UBYTE PixelRed      = { 255 };
+        UBYTE PixelReserved = { 0 };
+        Assert(FTell() - recordStart - offBitsSrc == cbBitsSrc,
+               "Source pixels must match cbBitsSrc.");
+        Assert(FTell() - recordStart == nSize,
+               "SETDIBITSTODEVICE nSize must match the emitted record length.");
+        AssertValidEmfRecordSize(FTell() - recordStart);
+      } SetDiBitsToDevice;
+      SetEvilBit(previousSetDiBitsSequenceEvilState);
+    }
 
   } else if (recordType == EMR_STRETCHDIBITS) {
     EMRSTRETCHDIBITS StretchDIBits;
