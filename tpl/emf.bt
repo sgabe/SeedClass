@@ -4754,9 +4754,18 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
           UBYTE Red = { 255 };
         } palPalEntry;
       } CreatedPalette;
-      // Optionally rewrite the created palette's only entry.
-      local uint paletteEntriesKind = Random(2);
-      if (paletteEntriesKind == 1) {
+      // Optionally rewrite the created palette's only entry, or resize it.
+      local uint paletteEntriesKind = Random(3);
+      if (paletteEntriesKind == 2) {
+        // 16-byte EMR_RESIZEPALETTE (2.3.8.4): grow the created palette to two entries.
+        struct {
+          DWORD iType = { EMR_RESIZEPALETTE };
+          DWORD nSize = { 16 };
+          DWORD ihPal = { 1 };
+          DWORD NumberOfEntries = { 2 };
+        } ResizeCreatedPalette;
+        recCnt += 1;
+      } else if (paletteEntriesKind == 1) {
         // 24-byte EMR_SETPALETTEENTRIES: 20 fixed bytes plus one LogPaletteEntry.
         struct {
           DWORD iType = { EMR_SETPALETTEENTRIES };
