@@ -573,6 +573,27 @@ typedef struct _BLENDFUNCTION {
   BYTE AlphaFormat = { 0x0, 0x1 };
 } BLENDFUNCTION;
 
+/** 2.2.2 ColorAdjustment Object
+ * https://learn.microsoft.com/en-my/openspecs/windows_protocols/ms-emf/71d7f4d0-b645-4de8-a558-8a2e0fc596cb
+ */
+typedef struct tagCOLORADJUSTMENT {
+  // Generated values are the device defaults; input records keep their declared values.
+  local int previousColorAdjustmentEvilState = SetEvilBit(IsParsing());
+  WORD  Size            = { 0x0018 }; // 24 bytes, the size of this object.
+  WORD  Values          = { 0x0000 }; // No CA_NEGATIVE or CA_LOG_FILTER.
+  WORD  IlluminantIndex = { 0x0000 }; // ILLUMINANT_DEVICE_DEFAULT.
+  WORD  RedGamma        = { 10000 };
+  WORD  GreenGamma      = { 10000 };
+  WORD  BlueGamma       = { 10000 };
+  WORD  ReferenceBlack  = { 0 };
+  WORD  ReferenceWhite  = { 10000 };
+  SHORT Contrast        = { 0 };
+  SHORT Brightness      = { 0 };
+  SHORT Colorfulness    = { 0 };
+  SHORT RedGreenTint    = { 0 };
+  SetEvilBit(previousColorAdjustmentEvilState);
+} COLORADJUSTMENT;
+
 /** 2.2.5 EmrText Object
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/dd585d0a-5d7c-4034-963a-1141af836972
  */
@@ -3766,6 +3787,27 @@ typedef struct tagEMRSETBRUSHORGEX {
   FSeek(recordEnd);
 } EMRSETBRUSHORGEX;
 
+/** 2.3.11.13 EMR_SETCOLORADJUSTMENT Record
+ * https://learn.microsoft.com/de-at/%20openspecs/windows_protocols/ms-emf/81b3cd7c-ed67-42aa-ab98-47b99d697231
+ */
+typedef struct tagEMRSETCOLORADJUSTMENT {
+  local int64 recordStart = FTell();
+  DWORD iType = { 0x00000017 };
+  DWORD nSize;
+  COLORADJUSTMENT ColorAdjustment; // 8 fixed bytes + 24 bytes = 32-byte record.
+
+  local int64 recordSize = FTell() - recordStart;
+  local uint paddingSize = Align4(recordSize) - recordSize;
+  BYTE EmrAlignmentPadding[paddingSize];
+  local int64 recordEnd = FTell();
+  AssertValidEmfRecordSize(recordEnd - recordStart);
+  FSeek(recordStart + 4);
+  local int previousEvilState = SetEvilBit(false);
+  DWORD nSize = { (DWORD)(recordEnd - recordStart) };
+  SetEvilBit(previousEvilState);
+  FSeek(recordEnd);
+} EMRSETCOLORADJUSTMENT;
+
 /** 11.19 EMR_SETMAPMODE Record
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/aa4ad35d-fa42-4a4f-959a-8b41304e1b05
  */
@@ -4241,7 +4283,8 @@ local DWORD supportedRecordTypes[] = {
   EMR_FORCEUFIMAPPING,
   EMR_COLORMATCHTOTARGETW,
   EMR_POLYTEXTOUTA,
-  EMR_BITBLT
+  EMR_BITBLT,
+  EMR_SETCOLORADJUSTMENT
 };
 
 LittleEndian();
@@ -4395,6 +4438,9 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
 
   } else if (recordType == EMR_SETTEXTALIGN) {
     EMRSETTEXTALIGN SetTextAlign;
+
+  } else if (recordType == EMR_SETCOLORADJUSTMENT) {
+    EMRSETCOLORADJUSTMENT SetColorAdjustment;
 
   } else if (recordType == EMR_SETTEXTCOLOR) {
     EMRSETTEXTCOLOR SetTextColor;
