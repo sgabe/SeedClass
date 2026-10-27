@@ -4633,9 +4633,10 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
         DWORD nSize = { 12 };
         DWORD ihObject = { 1 };
       } SelectCreatedBrush;
-      // Fill through the selected brush with either a plain rectangle or a
-      // one-rectangle frame region (2.3.5.11 EMR_FRAMERGN).
-      local uint brushFillKind = Random(2);
+      // Fill through the selected brush with a plain rectangle, a one-rectangle
+      // frame region (2.3.5.11 EMR_FRAMERGN), or a one-rectangle fill region
+      // (2.3.5.10 EMR_FILLRGN).
+      local uint brushFillKind = Random(3);
       if (brushFillKind == 1) {
         // 88-byte EMR_FRAMERGN: 40 fixed bytes plus a 48-byte REGIONDATA.
         struct {
@@ -4648,6 +4649,16 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
           LONG  Height      = { 3 };
           REGIONDATA rgnData;          // Header plus one 20,30-180,230 rectangle.
         } BrushFrameRegion;
+      } else if (brushFillKind == 2) {
+        // 80-byte EMR_FILLRGN: 32 fixed bytes plus a 48-byte REGIONDATA.
+        struct {
+          DWORD iType       = { EMR_FILLRGN };
+          DWORD nSize       = { 80 };
+          RECTL rclBounds;             // Logical bounds 20,30-180,230.
+          DWORD rgnDataSize = { 48 };
+          DWORD ihBrush     = { 1 };
+          REGIONDATA rgnData;          // Header plus one 20,30-180,230 rectangle.
+        } BrushFillRegion;
       } else {
         EMRRECTANGLE BrushRectangle;
       }
