@@ -4239,7 +4239,8 @@ local DWORD supportedRecordTypes[] = {
   EMR_GRADIENTFILL,
   EMR_NAMEDESCAPE,
   EMR_FORCEUFIMAPPING,
-  EMR_COLORMATCHTOTARGETW
+  EMR_COLORMATCHTOTARGETW,
+  EMR_POLYTEXTOUTA
 };
 
 LittleEndian();
@@ -4880,7 +4881,39 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
     EMREXTCREATEPEN CreatePenEx;
 
   } else if (recordType == EMR_POLYTEXTOUTA) {
-    EMRPOLYTEXTOUTA PolyTextOutA;
+    if (IsParsing()) {
+      EMRPOLYTEXTOUTA PolyTextOutA;
+    } else {
+      local int previousPolyTextSequenceEvilState = SetEvilBit(false);
+      // 84-byte EMR_POLYTEXTOUTA: 40 fixed bytes, one 40-byte EmrText at +40,
+      // a 3-byte ASCII string at +80, and one alignment byte. No Dx array.
+      struct {
+        DWORD iType = { EMR_POLYTEXTOUTA };
+        DWORD nSize = { 84 };
+        RECTL rclBounds;                 // Device bounds 20,30-180,230.
+        DWORD iGraphicsMode = { 1 };     // GM_COMPATIBLE.
+        // IEEE-754 FLOAT 1.0, encoded as bits for FormatFuzzer's integer-based parser.
+        DWORD exScale = { 0x3F800000 };
+        DWORD eyScale = { 0x3F800000 };
+        LONG cStrings = { 1 };
+        struct {
+          struct {
+            LONG x = { 40 };
+            LONG y = { 60 };
+          } ptlReference;
+          DWORD nChars = { 3 };
+          DWORD offString = { 80 };      // String offset from the record start.
+          DWORD fOptions = { 0 };        // No ETO_OPAQUE or ETO_CLIPPED.
+          RECTL rcl;                     // Device bounds 20,30-180,230.
+          DWORD offDx = { 0 };           // No character-spacing array.
+        } aEmrText;
+        BYTE StringCharacterA = { 0x41 };
+        BYTE StringCharacterB = { 0x42 };
+        BYTE StringCharacterC = { 0x43 };
+        BYTE StringAlignmentPadding = { 0 };
+      } PolyTextOutA;
+      SetEvilBit(previousPolyTextSequenceEvilState);
+    }
 
   } else if (recordType == EMR_CREATECOLORSPACE) {
     EMRCREATECOLORSPACE CreateColorSpace;
