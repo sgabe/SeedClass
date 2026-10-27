@@ -2623,6 +2623,32 @@ typedef struct tagEMRPOLYTEXTOUTA {
   FSeek(recordEnd);
 } EMRPOLYTEXTOUTA;
 
+/** 2.3.5.33 EMR_POLYTEXTOUTW
+ * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/d5c66e5a-f236-4c0a-ba4a-ca2ce8e2cf04
+ */
+typedef struct tagEMRPOLYTEXTOUTW {
+  local int64 recordStart = FTell();
+  DWORD iType = { 0x00000061 };
+  DWORD nSize;
+  RECTL rclBounds;
+  DWORD iGraphicsMode;
+  FLOAT exScale;
+  FLOAT eyScale;
+  LONG cStrings <min=1, max=1>;
+  EMRTEXTA aEmrtext[cStrings];
+
+  local int64 recordSize = FTell() - recordStart;
+  local uint paddingSize = Align4(recordSize) - recordSize;
+  BYTE EmrAlignmentPadding[paddingSize];
+  local int64 recordEnd = FTell();
+  AssertValidEmfRecordSize(recordEnd - recordStart);
+  FSeek(recordStart + 4);
+  local int previousEvilState = SetEvilBit(false);
+  DWORD nSize = { (DWORD)(recordEnd - recordStart) };
+  SetEvilBit(previousEvilState);
+  FSeek(recordEnd);
+} EMRPOLYTEXTOUTW;
+
 /** 2.3.5.34 EMR_RECTANGLE
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/3c471238-0a02-4992-90a2-bfd2afd98f2a
  */
@@ -4345,6 +4371,7 @@ local DWORD supportedRecordTypes[] = {
   EMR_FORCEUFIMAPPING,
   EMR_COLORMATCHTOTARGETW,
   EMR_POLYTEXTOUTA,
+  EMR_POLYTEXTOUTW,
   EMR_BITBLT,
   EMR_SETCOLORADJUSTMENT,
   EMR_SETDIBITSTODEVICE
@@ -5176,6 +5203,42 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
         BYTE StringCharacterC = { 0x43 };
         BYTE StringAlignmentPadding = { 0 };
       } PolyTextOutA;
+      SetEvilBit(previousPolyTextSequenceEvilState);
+    }
+
+  } else if (recordType == EMR_POLYTEXTOUTW) {
+    if (IsParsing()) {
+      EMRPOLYTEXTOUTW PolyTextOutW;
+    } else {
+      local int previousPolyTextSequenceEvilState = SetEvilBit(false);
+      // 88-byte EMR_POLYTEXTOUTW: 40 fixed bytes, one 40-byte EmrText at +40,
+      // a 3-character UTF-16 string at +80, and two alignment bytes. No Dx array.
+      struct {
+        DWORD iType = { EMR_POLYTEXTOUTW };
+        DWORD nSize = { 88 };
+        RECTL rclBounds;                 // Device bounds 20,30-180,230.
+        DWORD iGraphicsMode = { 1 };     // GM_COMPATIBLE.
+        // IEEE-754 FLOAT 1.0, encoded as bits for FormatFuzzer's integer-based parser.
+        DWORD exScale = { 0x3F800000 };
+        DWORD eyScale = { 0x3F800000 };
+        LONG cStrings = { 1 };
+        struct {
+          struct {
+            LONG x = { 40 };
+            LONG y = { 60 };
+          } ptlReference;
+          DWORD nChars = { 3 };
+          DWORD offString = { 80 };      // String offset from the record start.
+          DWORD fOptions = { 0 };        // No ETO_OPAQUE or ETO_CLIPPED.
+          RECTL rcl;                     // Device bounds 20,30-180,230.
+          DWORD offDx = { 0 };           // No character-spacing array.
+        } aEmrText;
+        // UTF-16LE "ABC" at +80 (six bytes) followed by two zero padding bytes.
+        WORD StringCharacterA = { 0x0041 };
+        WORD StringCharacterB = { 0x0042 };
+        WORD StringCharacterC = { 0x0043 };
+        WORD StringAlignmentPadding = { 0 };
+      } PolyTextOutW;
       SetEvilBit(previousPolyTextSequenceEvilState);
     }
 
