@@ -4240,7 +4240,8 @@ local DWORD supportedRecordTypes[] = {
   EMR_NAMEDESCAPE,
   EMR_FORCEUFIMAPPING,
   EMR_COLORMATCHTOTARGETW,
-  EMR_POLYTEXTOUTA
+  EMR_POLYTEXTOUTA,
+  EMR_BITBLT
 };
 
 LittleEndian();
@@ -4824,7 +4825,72 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
     EMREXTSELECTCLIPRGN ExtSelectClipRgn;
 
   } else if (recordType == EMR_BITBLT) {
-    EMRBITBLT BitBlt;
+    if (IsParsing()) {
+      EMRBITBLT BitBlt;
+    } else {
+      local int previousBitBltSequenceEvilState = SetEvilBit(false);
+      // 144-byte EMR_BITBLT: 100 fixed bytes, a 40-byte BITMAPINFOHEADER at
+      // +100, and one 32-bit BI_RGB pixel at +140. No color table.
+      struct {
+        local int64 recordStart = FTell();
+        DWORD iType = { EMR_BITBLT };
+        DWORD nSize = { 144 };
+        // Device bounds for the one-pixel destination at 40,60.
+        LONG rclBoundsLeft   = { 40 };
+        LONG rclBoundsTop    = { 60 };
+        LONG rclBoundsRight  = { 41 };
+        LONG rclBoundsBottom = { 61 };
+        LONG xDest  = { 40 };
+        LONG yDest  = { 60 };
+        LONG cxDest = { 1 };
+        LONG cyDest = { 1 };
+        DWORD BitBltRasterOperation = { 0x00CC0020 }; // SRCCOPY needs the source.
+        LONG xSrc = { 0 };
+        LONG ySrc = { 0 };
+        // Identity XFORM [1,0,0,1,0,0] as IEEE-754 bits for the integer parser.
+        DWORD xformM11 = { 0x3F800000 };
+        DWORD xformM12 = { 0x00000000 };
+        DWORD xformM21 = { 0x00000000 };
+        DWORD xformM22 = { 0x3F800000 };
+        DWORD xformDx  = { 0x00000000 };
+        DWORD xformDy  = { 0x00000000 };
+        DWORD BkColorSrc = { 0 };
+        DWORD iUsageSrc  = { 0 };   // DIB_RGB_COLORS.
+        DWORD offBmiSrc  = { 100 };
+        DWORD cbBmiSrc   = { 40 };
+        DWORD offBitsSrc = { 140 };
+        DWORD cbBitsSrc  = { 4 };
+        Assert(FTell() - recordStart == offBmiSrc,
+               "Source bitmap header must start at offBmiSrc.");
+        // Source BITMAPINFOHEADER with no color table.
+        DWORD biSize = { 40 };
+        LONG biWidth  = { 1 };
+        LONG biHeight = { 1 };            // Bottom-up single row.
+        WORD biPlanes = { 1 };
+        WORD biBitCount = { 32 };
+        DWORD biCompression = { BI_RGB }; // 0.
+        DWORD biSizeImage = { 4 };
+        LONG biXPelsPerMeter = { 0 };
+        LONG biYPelsPerMeter = { 0 };
+        DWORD biClrUsed = { 0 };
+        DWORD biClrImportant = { 0 };
+        Assert(FTell() - recordStart - offBmiSrc == cbBmiSrc,
+               "Source bitmap header length must match cbBmiSrc.");
+        Assert(FTell() - recordStart == offBitsSrc,
+               "Source pixels must start at offBitsSrc.");
+        // One 32-bit pixel: blue 0, green 0, red 255, unused byte 0.
+        UBYTE PixelBlue     = { 0 };
+        UBYTE PixelGreen    = { 0 };
+        UBYTE PixelRed      = { 255 };
+        UBYTE PixelReserved = { 0 };
+        Assert(FTell() - recordStart - offBitsSrc == cbBitsSrc,
+               "Source pixels must match cbBitsSrc.");
+        Assert(FTell() - recordStart == nSize,
+               "BITBLT nSize must match the emitted record length.");
+        AssertValidEmfRecordSize(FTell() - recordStart);
+      } BitBlt;
+      SetEvilBit(previousBitBltSequenceEvilState);
+    }
 
   } else if (recordType == EMR_STRETCHBLT) {
     EMRSTRETCHBLT StretchBlt;
