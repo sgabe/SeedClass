@@ -4610,8 +4610,53 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
     if (IsParsing()) {
       // Parse the path geometry and completion records on subsequent iterations.
     } else {
-      local uint pathSequenceKind = Random(4);
-      if (pathSequenceKind == 3) {
+      local uint pathSequenceKind = Random(5);
+      if (pathSequenceKind == 4) {
+        // A closed rectangle is widened by a geometric pen, then filled once.
+        struct {
+          DWORD iType = { EMR_RECTANGLE };
+          DWORD nSize = { 24 };
+          LONG left = { 40 };
+          LONG top = { 60 };
+          LONG right = { 120 };
+          LONG bottom = { 140 };
+        } WidenRectangle;
+        EMRENDPATH EndWidenRectanglePath;
+        struct {
+          DWORD iType = { EMR_EXTCREATEPEN };
+          DWORD nSize = { 52 };
+          DWORD ihPen = { 1 };
+          DWORD offBmi = { 0 };
+          DWORD cbBmi = { 0 };
+          DWORD offBits = { 0 };
+          DWORD cbBits = { 0 };
+          DWORD PenStyle = { 0x00010000 }; // PS_GEOMETRIC | PS_SOLID.
+          DWORD Width = { 6 };
+          DWORD BrushStyle = { 0 }; // BS_SOLID.
+          DWORD color = { 0x00000000, 0x000000FF, 0x00FF0000 };
+          DWORD BrushHatch = { 0 }; // Ignored for BS_SOLID.
+          DWORD NumStyleEntries = { 0 };
+        } WidenPen;
+        struct {
+          DWORD iType = { EMR_SELECTOBJECT };
+          DWORD nSize = { 12 };
+          DWORD ihObject = { 1 };
+        } SelectWidenPen;
+        EMRWIDENPATH WidenRectanglePath;
+        EMRFILLPATH FillWidenedPath;
+        struct {
+          DWORD iType = { EMR_SELECTOBJECT };
+          DWORD nSize = { 12 };
+          DWORD ihObject = { BLACK_PEN };
+        } DeselectWidenPen;
+        struct {
+          DWORD iType = { EMR_DELETEOBJECT };
+          DWORD nSize = { 12 };
+          DWORD ihObject = { 1 };
+        } DeleteWidenPen;
+        generatedHandleCount = 2;
+        recCnt += 8;
+      } else if (pathSequenceKind == 3) {
         // One bounded cubic Bezier is flattened into lines, then outlined.
         struct {
           DWORD iType = { EMR_POLYBEZIER };
