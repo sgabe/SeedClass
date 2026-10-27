@@ -4213,6 +4213,7 @@ local DWORD supportedRecordTypes[] = {
   EMR_CHORD,
   EMR_PIE,
   EMR_SELECTPALETTE,
+  EMR_CREATEPALETTE,
   EMR_REALIZEPALETTE,
   EMR_EXTFLOODFILL,
   EMR_EXTTEXTOUTA,
@@ -4586,7 +4587,44 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 2; recCnt++) {
     EMRSELECTPALETTE SelectPalette;
 
   } else if (recordType == EMR_CREATEPALETTE) {
-    EMRCREATEPALETTE CreatePalette;
+    if (IsParsing()) {
+      EMRCREATEPALETTE CreatePalette;
+    } else {
+      local int previousPaletteSequenceEvilState = SetEvilBit(false);
+      // 20-byte EMR_CREATEPALETTE: 12 fixed bytes plus a one-entry LogPalette.
+      struct {
+        DWORD iType = { EMR_CREATEPALETTE };
+        DWORD nSize = { 20 };
+        DWORD ihPal = { 1 };
+        WORD palVersion = { 0x0300 };
+        WORD palNumEntries = { 1 };
+        struct {
+          UBYTE Reserved = { 0 };
+          UBYTE Blue = { 0 };
+          UBYTE Green = { 0 };
+          UBYTE Red = { 255 };
+        } palPalEntry;
+      } CreatedPalette;
+      struct {
+        DWORD iType = { EMR_SELECTPALETTE };
+        DWORD nSize = { 12 };
+        DWORD ihPal = { 1 };
+      } SelectCreatedPalette;
+      // Reselect the stock palette so the created palette can be deleted.
+      struct {
+        DWORD iType = { EMR_SELECTPALETTE };
+        DWORD nSize = { 12 };
+        DWORD ihPal = { DEFAULT_PALETTE };
+      } DeselectCreatedPalette;
+      struct {
+        DWORD iType = { EMR_DELETEOBJECT };
+        DWORD nSize = { 12 };
+        DWORD ihObject = { 1 };
+      } DeleteCreatedPalette;
+      generatedHandleCount = 2;
+      recCnt += 3;
+      SetEvilBit(previousPaletteSequenceEvilState);
+    }
 
   } else if (recordType == EMR_SETPALETTEENTRIES) {
     EMRSETPALETTEENTRIES SetPaletteEntries;
