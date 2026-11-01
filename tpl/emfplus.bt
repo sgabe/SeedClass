@@ -705,8 +705,8 @@ typedef struct tagEmfPlusRect {
 typedef struct tagEmfPlusFillRects {
   local uint _cSize     = 0x00000010;
   local uint _cDataSize = 0x00000004;
-  local uint _rSize     = 0x00000024;
-  local uint _rDataSize = 0x00000018;
+  local uint _rSize     = 0x0000001c;
+  local uint _rDataSize = 0x00000010;
 
   local uint start = FTell();
   FSeek(start);
@@ -718,12 +718,17 @@ typedef struct tagEmfPlusFillRects {
   DWORD cIdentifier = { 0x2B464D45 };
 
   WORD Type         = { 0x400A     };
-  WORD Flags;
+  WORD Flags        = { 0xC000     }; // S=1 (inline color), C=1 (compressed rects).
   DWORD Size        = { _rSize     };
   DWORD DataSize    = { _rDataSize };
-  DWORD BrushID;
+  EmfPlusARGB BrushID;                // S=1: BrushID holds an EmfPlusARGB color.
   DWORD Count       = { 0x00000001 };
-  EmfPlusRect RectData[1];
+
+  // C=1: one EmfPlusRect with signed 16-bit coordinates.
+  SHORT RectX       = { 10 };
+  SHORT RectY       = { 10 };
+  SHORT RectWidth   = { 100 };
+  SHORT RectHeight  = { 100 };
 
   // Fix Size and DataSize fields in the EMR_COMMENT_EMFPLUS record.
   local uint end = FTell();
@@ -1945,7 +1950,7 @@ FSeek(EmfHeader.nSize + 0x2c);
 // Add EMF+ records.
 local uint recCnt = 0;
 for (recCnt = 0; recCnt < EmfHeader.nRecords - 4; recCnt++) {
-  local UBYTE possible[] = { 0x9 };
+  local UBYTE possible[] = { 0x9, 0xa };
   //local UBYTE possible[] = { 0x36, 0xd };
   UBYTE recType <values=possible>;
   FSkip(-1);
