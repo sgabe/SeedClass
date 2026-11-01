@@ -1446,6 +1446,41 @@ typedef struct tagEmfPlusScaleWorldTransform {
 
 } EmfPlusScaleWorldTransform;
 
+// [MS-EMFPLUS] 2.3.9.3 EmfPlusRotateWorldTransform Record
+typedef struct tagEmfPlusRotateWorldTransform {
+  local int64 start = FTell();
+
+  // Add EMR_COMMENT_EMFPLUS record.
+  DWORD cType       = { 0x00000046 };
+  DWORD cSize;
+  DWORD cDataSize;
+  DWORD cIdentifier = { 0x2B464D45 };
+
+  local int64 rStart = FTell();
+  WORD Type         = { 0x402F     };
+  WORD Flags        = { 0x0000     }; // A=0: pre-multiply the rotation onto the world transform.
+  DWORD Size;
+  DWORD DataSize;
+  FLOAT Angle       = { 10.0 };       // Rotation angle in degrees.
+
+  // Align the EMF+ record, then the EMR_COMMENT_EMFPLUS record, to 4 bytes.
+  local int64 rDataEnd = FTell();
+  BYTE RecordAlignmentPadding[Align4(rDataEnd - rStart) - (rDataEnd - rStart)];
+  local int64 rEnd = FTell();
+  BYTE CommentAlignmentPadding[Align4(rEnd - start) - (rEnd - start)];
+  local int64 end = FTell();
+
+  // Fix Size and DataSize fields from the actual record boundaries.
+  FSeek(start + 4);
+  DWORD cSize = { (DWORD)(end - start) };           // Comment header, identifier, EMF+ record and padding (0x20).
+  DWORD cDataSize = { (DWORD)(rEnd - start - 12) }; // Identifier and EMF+ record (0x14).
+  FSeek(rStart + 4);
+  DWORD Size = { (DWORD)(rEnd - rStart) };          // EMF+ record header and data (0x10).
+  DWORD DataSize = { (DWORD)(rEnd - rStart - 12) }; // EMF+ data after the record header (0x04).
+  FSeek(end);
+
+} EmfPlusRotateWorldTransform;
+
 // [MS-EMFPLUS] 2.2.2.47 EmfPlusTransformMatrix Object
 typedef struct tagEmfPlusTransformMatrix {
   FLOAT m11         = { 0.75 };       // Horizontal scale component.
@@ -3158,7 +3193,7 @@ local uint penObjectDefined = 0;      // EmfPlusPen with ObjectID 0 has been emi
 for (recCnt = 0; recCnt < EmfHeader.nRecords - 4; recCnt++) {
   drawingStart = FTell();
   drawingRecords = 1;                 // Outer EMR_COMMENT records emitted by this selection.
-  local UBYTE possible[] = { 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0x10, 0x11, 0x12, 0x16, 0x19, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x2a, 0x2b, 0x2d, 0x2e, 0x2e, 0x2e, 0x2e, 0x32, 0x33 };
+  local UBYTE possible[] = { 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0x10, 0x11, 0x12, 0x16, 0x19, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x2a, 0x2b, 0x2d, 0x2e, 0x2e, 0x2e, 0x2e, 0x2f, 0x32, 0x33 };
   //local UBYTE possible[] = { 0x36, 0xd };
   UBYTE recType <values=possible>;
   FSkip(-1);
@@ -3227,6 +3262,14 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 4; recCnt++) {
     EmfPlusScaleWorldTransform ScaleWorldTransform;
     EmfPlusFillEllipse ScaledFillEllipse;
     EmfPlusResetWorldTransform ScaleResetWorldTransform;
+    drawingRecords = 3;
+
+  } else if (recType == 0x2f) {
+    // Bounded transform branch: RotateWorldTransform, inline-color FillEllipse, ResetWorldTransform,
+    // so the rotation does not persist into later selections (32 + 40 + 28 = 100 bytes).
+    EmfPlusRotateWorldTransform RotateWorldTransform;
+    EmfPlusFillEllipse RotatedFillEllipse;
+    EmfPlusResetWorldTransform RotateResetWorldTransform;
     drawingRecords = 3;
 
   } else if (recType == 0x32) {
