@@ -4,12 +4,13 @@
 //      File: EMFPlus.bt
 //   Authors: Gabor Seljan
 //    E-mail: gabor@seljan.hu
-//   Version: 0.3
+//   Version: 0.4
 //   Purpose: Enhanced Metafile Format Plus (EMFPLUS) template.
 //  Category: Image
 // File Mask: *.emf
 //  ID Bytes: 01 00 00 00
 //   History:
+//   0.4   2026-10-31 G Seljan: Expanded drawing and rendering-state generation.
 //   0.3   2026-10-29 G Seljan: Expanded fill, drawing, clipping and compositing generation.
 //   0.2   2026-10-29 G Seljan: Corrected EMF/EMF+ headers and record accounting.
 //   0.1   2022-05-31 G Seljan: Initial version.
@@ -1126,6 +1127,42 @@ typedef struct tagEmfPlusSetCompositingQuality {
   FSeek(end);
 
 } EmfPlusSetCompositingQuality;
+
+// [MS-EMFPLUS] 2.3.6.4 EmfPlusSetInterpolationMode Record
+typedef struct tagEmfPlusSetInterpolationMode {
+  local int64 start = FTell();
+
+  // Add EMR_COMMENT_EMFPLUS record.
+  DWORD cType       = { 0x00000046 };
+  DWORD cSize;
+  DWORD cDataSize;
+  DWORD cIdentifier = { 0x2B464D45 };
+
+  local int64 rStart = FTell();
+  WORD Type         = { 0x4021     };
+  // Flags low byte: InterpolationMode (0x00-0x07); high byte: reserved, must be zero.
+  local WORD possibleFlags[] = { 0x0000, 0x0001, 0x0002, 0x0003, 0x0004, 0x0005, 0x0006, 0x0007 };
+  WORD Flags <values=possibleFlags>;
+  DWORD Size;
+  DWORD DataSize;                     // No record-specific data.
+
+  // Align the EMF+ record, then the EMR_COMMENT_EMFPLUS record, to 4 bytes.
+  local int64 rDataEnd = FTell();
+  BYTE RecordAlignmentPadding[Align4(rDataEnd - rStart) - (rDataEnd - rStart)];
+  local int64 rEnd = FTell();
+  BYTE CommentAlignmentPadding[Align4(rEnd - start) - (rEnd - start)];
+  local int64 end = FTell();
+
+  // Fix Size and DataSize fields from the actual record boundaries.
+  FSeek(start + 4);
+  DWORD cSize = { (DWORD)(end - start) };           // Comment header, identifier, EMF+ record and padding.
+  DWORD cDataSize = { (DWORD)(rEnd - start - 12) }; // Identifier and EMF+ record.
+  FSeek(rStart + 4);
+  DWORD Size = { (DWORD)(rEnd - rStart) };          // EMF+ record header and data.
+  DWORD DataSize = { (DWORD)(rEnd - rStart - 12) }; // EMF+ data after the record header.
+  FSeek(end);
+
+} EmfPlusSetInterpolationMode;
 
 // [MS-EMFPLUS] 2.3.6.5 EmfPlusSetPixelOffsetMode Record
 typedef struct tagEmfPlusSetPixelOffsetMode {
@@ -2859,7 +2896,7 @@ local uint penObjectDefined = 0;      // EmfPlusPen with ObjectID 0 has been emi
 for (recCnt = 0; recCnt < EmfHeader.nRecords - 4; recCnt++) {
   drawingStart = FTell();
   drawingRecords = 1;                 // Outer EMR_COMMENT records emitted by this selection.
-  local UBYTE possible[] = { 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0x11, 0x12, 0x19, 0x1d, 0x1e, 0x1f, 0x20, 0x22, 0x23, 0x24, 0x32, 0x33 };
+  local UBYTE possible[] = { 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0x11, 0x12, 0x19, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x32, 0x33 };
   //local UBYTE possible[] = { 0x36, 0xd };
   UBYTE recType <values=possible>;
   FSkip(-1);
@@ -2887,6 +2924,9 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 4; recCnt++) {
 
   } else if (recType == 0x20) {
     EmfPlusSetTextContrast SetTextContrast;
+
+  } else if (recType == 0x21) {
+    EmfPlusSetInterpolationMode SetInterpolationMode;
 
   } else if (recType == 0x22) {
     EmfPlusSetPixelOffsetMode SetPixelOffsetMode;
