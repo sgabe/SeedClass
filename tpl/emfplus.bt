@@ -539,7 +539,7 @@ typedef struct {
   DWORD nVersion = { 0x00010000 };
   DWORD nBytes;                                        // Size of the metafile in bytes.
   DWORD nRecords <min=5, max=7>;                       // Header, EMF+ Header, 1-3 drawing selections (clipped selection emits 3 comments), EMF+ EOF, EOF.
-  WORD  nHandles = { 0x0000 };                         // Number of graphics objects used; no outer EMF objects are created.
+  WORD  nHandles = { 0x0001 };                         // Handle table size incl. reserved index zero; no outer EMF objects are created.
   WORD  sReserved = { 0 };
   DWORD nDescription = { 0 };                          // Number of chars in the unicode description string.
   DWORD offDescription = { 0 };                        // Offset to the metafile description record (0 if absent).
