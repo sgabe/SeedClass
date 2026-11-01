@@ -760,6 +760,95 @@ typedef struct tagEmfPlusFillRects {
 
 } EmfPlusFillRects;
 
+//------------------------------------------------
+// Property Record Types
+//------------------------------------------------
+
+// [MS-EMFPLUS] 2.1.1.5 CompositingMode Enumeration
+typedef enum <UBYTE> {
+  CompositingModeSourceOver = 0x00,
+  CompositingModeSourceCopy = 0x01
+} CompositingMode;
+
+// [MS-EMFPLUS] 2.1.1.25 PixelOffsetMode Enumeration
+typedef enum <UBYTE> {
+  PixelOffsetModeDefault     = 0x00,
+  PixelOffsetModeHighSpeed   = 0x01,
+  PixelOffsetModeHighQuality = 0x02,
+  PixelOffsetModeNone        = 0x03,
+  PixelOffsetModeHalf        = 0x04
+} PixelOffsetMode;
+
+// [MS-EMFPLUS] 2.3.6.2 EmfPlusSetCompositingMode Record
+typedef struct tagEmfPlusSetCompositingMode {
+  local int64 start = FTell();
+
+  // Add EMR_COMMENT_EMFPLUS record.
+  DWORD cType       = { 0x00000046 };
+  DWORD cSize;
+  DWORD cDataSize;
+  DWORD cIdentifier = { 0x2B464D45 };
+
+  local int64 rStart = FTell();
+  WORD Type         = { 0x4023     };
+  CompositingMode Mode;               // Flags low byte: CompositingMode.
+  UBYTE FlagsReserved = { 0x00 };     // Flags high byte: reserved, must be zero.
+  DWORD Size;
+  DWORD DataSize;                     // No record-specific data.
+
+  // Align the EMF+ record, then the EMR_COMMENT_EMFPLUS record, to 4 bytes.
+  local int64 rDataEnd = FTell();
+  BYTE RecordAlignmentPadding[Align4(rDataEnd - rStart) - (rDataEnd - rStart)];
+  local int64 rEnd = FTell();
+  BYTE CommentAlignmentPadding[Align4(rEnd - start) - (rEnd - start)];
+  local int64 end = FTell();
+
+  // Fix Size and DataSize fields from the actual record boundaries.
+  FSeek(start + 4);
+  DWORD cSize = { (DWORD)(end - start) };           // Comment header, identifier, EMF+ record and padding.
+  DWORD cDataSize = { (DWORD)(rEnd - start - 12) }; // Identifier and EMF+ record.
+  FSeek(rStart + 4);
+  DWORD Size = { (DWORD)(rEnd - rStart) };          // EMF+ record header and data.
+  DWORD DataSize = { (DWORD)(rEnd - rStart - 12) }; // EMF+ data after the record header.
+  FSeek(end);
+
+} EmfPlusSetCompositingMode;
+
+// [MS-EMFPLUS] 2.3.6.5 EmfPlusSetPixelOffsetMode Record
+typedef struct tagEmfPlusSetPixelOffsetMode {
+  local int64 start = FTell();
+
+  // Add EMR_COMMENT_EMFPLUS record.
+  DWORD cType       = { 0x00000046 };
+  DWORD cSize;
+  DWORD cDataSize;
+  DWORD cIdentifier = { 0x2B464D45 };
+
+  local int64 rStart = FTell();
+  WORD Type         = { 0x4022     };
+  PixelOffsetMode Mode;               // Flags low byte: PixelOffsetMode.
+  UBYTE FlagsReserved = { 0x00 };     // Flags high byte: reserved, must be zero.
+  DWORD Size;
+  DWORD DataSize;                     // No record-specific data.
+
+  // Align the EMF+ record, then the EMR_COMMENT_EMFPLUS record, to 4 bytes.
+  local int64 rDataEnd = FTell();
+  BYTE RecordAlignmentPadding[Align4(rDataEnd - rStart) - (rDataEnd - rStart)];
+  local int64 rEnd = FTell();
+  BYTE CommentAlignmentPadding[Align4(rEnd - start) - (rEnd - start)];
+  local int64 end = FTell();
+
+  // Fix Size and DataSize fields from the actual record boundaries.
+  FSeek(start + 4);
+  DWORD cSize = { (DWORD)(end - start) };           // Comment header, identifier, EMF+ record and padding.
+  DWORD cDataSize = { (DWORD)(rEnd - start - 12) }; // Identifier and EMF+ record.
+  FSeek(rStart + 4);
+  DWORD Size = { (DWORD)(rEnd - rStart) };          // EMF+ record header and data.
+  DWORD DataSize = { (DWORD)(rEnd - rStart - 12) }; // EMF+ data after the record header.
+  FSeek(end);
+
+} EmfPlusSetPixelOffsetMode;
+
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/b794b780-e9a8-4682-af65-9b614aecfbe6
 typedef struct tagEmfPlusDrawDriverString {
   local uint _rGlyphCount = 1;
@@ -1977,7 +2066,7 @@ local uint recCnt = 0;
 local int64 drawingStart = 0;
 for (recCnt = 0; recCnt < EmfHeader.nRecords - 4; recCnt++) {
   drawingStart = FTell();
-  local UBYTE possible[] = { 0x9, 0xa };
+  local UBYTE possible[] = { 0x9, 0xa, 0x22, 0x23 };
   //local UBYTE possible[] = { 0x36, 0xd };
   UBYTE recType <values=possible>;
   FSkip(-1);
@@ -1987,6 +2076,12 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 4; recCnt++) {
 
   } else if (recType == 0xa) {
     EmfPlusFillRects FillRects;
+
+  } else if (recType == 0x22) {
+    EmfPlusSetPixelOffsetMode SetPixelOffsetMode;
+
+  } else if (recType == 0x23) {
+    EmfPlusSetCompositingMode SetCompositingMode;
 
   } else if (recType == 0xd) {
     EmfPlusDrawLines DrawLines;
