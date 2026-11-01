@@ -1945,7 +1945,7 @@ FSeek(EmfHeader.nSize + 0x2c);
 // Add EMF+ records.
 local uint recCnt = 0;
 for (recCnt = 0; recCnt < EmfHeader.nRecords - 4; recCnt++) {
-  local UBYTE possible[] = { 0x9, 0xa, 0xd, 0x3a, 0x36, 0x38 };
+  local UBYTE possible[] = { 0x9 };
   //local UBYTE possible[] = { 0x36, 0xd };
   UBYTE recType <values=possible>;
   FSkip(-1);
