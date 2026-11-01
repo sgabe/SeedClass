@@ -604,7 +604,7 @@ typedef struct tagEMFPLUSHEADER {
   DWORD cIdentifier = { 0x2B464D45 };
 
   WORD Type = { 0x4001 };
-  WORD Flags = { 0x0001 };
+  WORD Flags = { 0x0000 };
   DWORD Size = { _rSize };
   DWORD DataSize = { _rDataSize };
   DWORD Version = { 0xDBC01002 };
@@ -655,6 +655,14 @@ typedef struct tagEMFPLUSEOF {
 // 4. Drawing Record Types
 //------------------------------------------------
 
+// [MS-EMFPLUS] 2.2.2.1 EmfPlusARGB
+typedef struct tagEmfPlusARGB {
+  UBYTE Blue;
+  UBYTE Green;
+  UBYTE Red;
+  UBYTE Alpha = { 0xFF };
+} EmfPlusARGB;
+
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/38dc4973-cae8-406e-89f3-7536e2139def
 typedef struct tagEmfPlusClear {
   local uint _cSize = 0x00000010;
@@ -675,7 +683,7 @@ typedef struct tagEmfPlusClear {
   WORD Flags = { 0x0000 };
   DWORD Size = { _rSize };
   DWORD DataSize = { _rDataSize };
-  COLORREF Color;
+  EmfPlusARGB Color;
 
   // Fix Size and DataSize fields in Add EMR_COMMENT_EMFPLUS record.
   local uint end = FTell();
