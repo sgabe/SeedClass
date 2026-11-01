@@ -1082,42 +1082,59 @@ typedef struct tagEmfPlusDrawDriverString {
 
 } EmfPlusDrawDriverString;
 
-// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/65ddf0d3-ae37-4da6-9a89-251ded97f1ad
+// [MS-EMFPLUS] 2.2.2.36 EmfPlusPointF Object
 typedef struct tagEmfPlusPointF {
-  DWORD X;
-  DWORD Y;
+  FLOAT X;                            // 32-bit floating-point horizontal coordinate.
+  FLOAT Y;                            // 32-bit floating-point vertical coordinate.
 } EmfPlusPointF;
 
-// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/a5c0bc88-ab0e-4126-b68f-47b04bfc5cad
+// [MS-EMFPLUS] 2.3.4.10 EmfPlusDrawLines Record
 typedef struct tagEmfPlusDrawLines {
-  local uint _rCount = 1;
-
-  local uint _cSize       = 0x00000010;
-  local uint _cDataSize   = 0x00000004;
-  local uint _rSize       = (_rCount * 0x00000008) + 0x00000010;
-  local uint _rDataSize   = (_rCount * 0x00000008) + 0x00000004;
-
-  local uint start = FTell();
-  FSeek(start);
+  local int64 start = FTell();
 
   // Add EMR_COMMENT_EMFPLUS record.
   DWORD cType       = { 0x00000046 };
-  DWORD cSize       = { _cSize      };
-  DWORD cDataSize   = { _cDataSize  };
+  DWORD cSize;
+  DWORD cDataSize;
   DWORD cIdentifier = { 0x2B464D45 };
 
-  WORD Type         = { 0x400d     };
-  WORD Flags;
-  DWORD Size        = { _rSize     };
-  DWORD DataSize    = { _rDataSize };
-  DWORD Count       = { _rCount    };
-  EmfPlusPointF Points[ _rCount    ];
+  local int64 rStart = FTell();
+  WORD Type         = { 0x400D     };
+  WORD Flags        = { 0x0000     }; // C=0 (EmfPlusPointF), L=0, P=0 (absolute), ObjectID=0 (EmfPlusPen).
+  DWORD Size;
+  DWORD DataSize;
+  DWORD Count       <min=2, max=4>;   // At least 2 points MUST be specified.
 
-  // Fix Size and DataSize fields in the EMR_COMMENT_EMFPLUS record.
-  local uint end = FTell();
+  // C=0, P=0: [MS-EMFPLUS] 2.2.2.36 EmfPlusPointF objects with 32-bit
+  // floating-point absolute coordinates. Bounded finite values inside the
+  // frame; the first Count corners of a rectangle form an open polyline.
+  FLOAT Point0X     = { 40.0  };
+  FLOAT Point0Y     = { 50.0  };
+  FLOAT Point1X     = { 160.0 };
+  FLOAT Point1Y     = { 50.0  };
+  if (Count > 2) {
+    FLOAT Point2X   = { 160.0 };
+    FLOAT Point2Y   = { 210.0 };
+  }
+  if (Count > 3) {
+    FLOAT Point3X   = { 40.0  };
+    FLOAT Point3Y   = { 210.0 };
+  }
+
+  // Align the EMF+ record, then the EMR_COMMENT_EMFPLUS record, to 4 bytes.
+  local int64 rDataEnd = FTell();
+  BYTE RecordAlignmentPadding[Align4(rDataEnd - rStart) - (rDataEnd - rStart)];
+  local int64 rEnd = FTell();
+  BYTE CommentAlignmentPadding[Align4(rEnd - start) - (rEnd - start)];
+  local int64 end = FTell();
+
+  // Fix Size and DataSize fields from the actual record boundaries.
   FSeek(start + 4);
-  DWORD	cSize = { SetEmfPlusSize(_cSize, _rSize) };
-  DWORD	cDataSize = { SetEmfPlusSize(_cDataSize, _rSize) };
+  DWORD cSize = { (DWORD)(end - start) };           // Comment header, identifier, EMF+ record and padding.
+  DWORD cDataSize = { (DWORD)(rEnd - start - 12) }; // Identifier and EMF+ record.
+  FSeek(rStart + 4);
+  DWORD Size = { (DWORD)(rEnd - rStart) };          // EMF+ record header and data (0x10 + 8 * Count).
+  DWORD DataSize = { (DWORD)(rEnd - rStart - 12) }; // EMF+ data after the record header (0x04 + 8 * Count).
   FSeek(end);
 
 } EmfPlusDrawLines;
@@ -1132,6 +1149,54 @@ typedef struct tagGUID {
   WORD  Data3;
   QWORD Data4;
 } GUID;
+
+// [MS-EMFPLUS] 2.3.5.1 EmfPlusObject Record (ObjectTypePen, 2.2.1.7 EmfPlusPen)
+typedef struct tagEmfPlusObjectPen {
+  local int64 start = FTell();
+
+  // Add EMR_COMMENT_EMFPLUS record.
+  DWORD cType       = { 0x00000046 };
+  DWORD cSize;
+  DWORD cDataSize;
+  DWORD cIdentifier = { 0x2B464D45 };
+
+  local int64 rStart = FTell();
+  WORD Type         = { 0x4008     };
+  WORD Flags        = { 0x0200     }; // C=0 (no continuation, no TotalObjectSize), ObjectType=ObjectTypePen (2), ObjectID=0.
+  DWORD Size;
+  DWORD DataSize;
+
+  // 2.2.1.7 EmfPlusPen object.
+  DWORD Version     = { 0xDBC01002 }; // EmfPlusGraphicsVersion.
+  DWORD PenType     = { 0x00000000 }; // Type MUST be zero.
+
+  // 2.2.2.33 EmfPlusPenData object.
+  DWORD PenDataFlags = { 0x00000000 }; // No OptionalData present.
+  DWORD PenUnit     = { 0x00000002 }; // UnitTypePixel.
+  FLOAT PenWidth    = { 2.0        }; // Positive finite width.
+
+  // 2.2.1.1 EmfPlusBrush object with 2.2.2.43 EmfPlusSolidBrushData.
+  DWORD BrushVersion = { 0xDBC01002 }; // EmfPlusGraphicsVersion.
+  DWORD BrushType   = { 0x00000000 }; // BrushTypeSolidColor.
+  EmfPlusARGB SolidColor;
+
+  // Align the EMF+ record, then the EMR_COMMENT_EMFPLUS record, to 4 bytes.
+  local int64 rDataEnd = FTell();
+  BYTE RecordAlignmentPadding[Align4(rDataEnd - rStart) - (rDataEnd - rStart)];
+  local int64 rEnd = FTell();
+  BYTE CommentAlignmentPadding[Align4(rEnd - start) - (rEnd - start)];
+  local int64 end = FTell();
+
+  // Fix Size and DataSize fields from the actual record boundaries.
+  FSeek(start + 4);
+  DWORD cSize = { (DWORD)(end - start) };           // Comment header, identifier, EMF+ record and padding (0x3C).
+  DWORD cDataSize = { (DWORD)(rEnd - start - 12) }; // Identifier and EMF+ record (0x30).
+  FSeek(rStart + 4);
+  DWORD Size = { (DWORD)(rEnd - rStart) };          // EMF+ record header and data (0x2C).
+  DWORD DataSize = { (DWORD)(rEnd - rStart - 12) }; // EMF+ data after the record header (0x20).
+  FSeek(end);
+
+} EmfPlusObjectPen;
 
 typedef struct tagEmfPlusSerializableObject {
   local uint _cSize     = 0x00000010;
@@ -2261,10 +2326,11 @@ emfRecordCount++;
 local uint recCnt = 0;
 local int64 drawingStart = 0;
 local uint drawingRecords = 0;
+local uint penObjectDefined = 0;      // EmfPlusPen with ObjectID 0 has been emitted.
 for (recCnt = 0; recCnt < EmfHeader.nRecords - 4; recCnt++) {
   drawingStart = FTell();
   drawingRecords = 1;                 // Outer EMR_COMMENT records emitted by this selection.
-  local UBYTE possible[] = { 0x9, 0xa, 0xc, 0xe, 0x22, 0x23, 0x32 };
+  local UBYTE possible[] = { 0x9, 0xa, 0xc, 0xd, 0xe, 0x22, 0x23, 0x32 };
   //local UBYTE possible[] = { 0x36, 0xd };
   UBYTE recType <values=possible>;
   FSkip(-1);
@@ -2295,6 +2361,12 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 4; recCnt++) {
     drawingRecords = 3;
 
   } else if (recType == 0xd) {
+    // Define the pen (ObjectID 0) once, before the first DrawLines; later DrawLines reuse it.
+    if (penObjectDefined == 0) {
+      EmfPlusObjectPen PenObject;
+      penObjectDefined = 1;
+      drawingRecords = 2;
+    }
     EmfPlusDrawLines DrawLines;
 
   } else if (recType == 0x3a) {
