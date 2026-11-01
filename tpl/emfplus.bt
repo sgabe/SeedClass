@@ -1149,6 +1149,62 @@ typedef struct tagEmfPlusDrawLines {
 
 } EmfPlusDrawLines;
 
+// [MS-EMFPLUS] 2.2.2.38 EmfPlusRect Object (DrawRects, C=1)
+typedef struct tagEmfPlusDrawRectS {
+  SHORT X           <min=0, max=400>; // Signed 16-bit horizontal coordinate.
+  SHORT Y           <min=0, max=400>; // Signed 16-bit vertical coordinate.
+  SHORT Width       <min=1, max=500>; // Strictly positive width.
+  SHORT Height      <min=1, max=500>; // Strictly positive height.
+} EmfPlusDrawRectS;
+
+// [MS-EMFPLUS] 2.3.4.13 EmfPlusDrawRects Record
+typedef struct tagEmfPlusDrawRects {
+  // Emit only the known values below; no evil out-of-range values in this record.
+  local int previousEvilState = SetEvilBit(false);
+  local int64 start = FTell();
+
+  // Add EMR_COMMENT_EMFPLUS record.
+  DWORD cType       = { 0x00000046 };
+  DWORD cSize;
+  DWORD cDataSize;
+  DWORD cIdentifier = { 0x2B464D45 };
+
+  local int64 rStart = FTell();
+  WORD Type         = { 0x400B     };
+  WORD Flags        = { 0x4000     }; // C=1 (EmfPlusRect), reserved bits zero, ObjectID=0 (EmfPlusPen).
+  DWORD Size;
+  DWORD DataSize;
+  DWORD Count       <min=1, max=3>;   // Number of rectangles in the array.
+
+  // C=1: EmfPlusRect objects with signed 16-bit coordinates.
+  EmfPlusDrawRectS RectData[Count];
+
+  // Align the EMF+ record, then the EMR_COMMENT_EMFPLUS record, to 4 bytes.
+  local int64 rDataEnd = FTell();
+  BYTE RecordAlignmentPadding[Align4(rDataEnd - rStart) - (rDataEnd - rStart)];
+  local int64 rEnd = FTell();
+  BYTE CommentAlignmentPadding[Align4(rEnd - start) - (rEnd - start)];
+  local int64 end = FTell();
+
+  // EmfPlusRect objects physically emitted after the record header (12) and Count (4).
+  local uint rectCount = (uint)((rDataEnd - rStart - 16) / 8);
+
+  // Fix constant, size and Count fields from the actual record boundaries.
+  FSeek(start);
+  DWORD cType       = { 0x00000046 };
+  DWORD cSize = { (DWORD)(end - start) };           // Comment header, identifier, EMF+ record and padding.
+  DWORD cDataSize = { (DWORD)(rEnd - start - 12) }; // Identifier and EMF+ record.
+  DWORD cIdentifier = { 0x2B464D45 };
+  WORD Type         = { 0x400B     };
+  WORD Flags        = { 0x4000     };
+  DWORD Size = { (DWORD)(rEnd - rStart) };          // EMF+ record header and data (0x10 + 8 * Count).
+  DWORD DataSize = { (DWORD)(rEnd - rStart - 12) }; // EMF+ data after the record header (0x04 + 8 * Count).
+  DWORD Count       = { (DWORD)rectCount };         // Number of EmfPlusRect objects emitted.
+  FSeek(end);
+  SetEvilBit(previousEvilState);
+
+} EmfPlusDrawRects;
+
 //------------------------------------------------
 // 5. Object Record Types
 //------------------------------------------------
@@ -2353,7 +2409,7 @@ local uint penObjectDefined = 0;      // EmfPlusPen with ObjectID 0 has been emi
 for (recCnt = 0; recCnt < EmfHeader.nRecords - 4; recCnt++) {
   drawingStart = FTell();
   drawingRecords = 1;                 // Outer EMR_COMMENT records emitted by this selection.
-  local UBYTE possible[] = { 0x9, 0xa, 0xc, 0xd, 0xe, 0x22, 0x23, 0x32 };
+  local UBYTE possible[] = { 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0x22, 0x23, 0x32 };
   //local UBYTE possible[] = { 0x36, 0xd };
   UBYTE recType <values=possible>;
   FSkip(-1);
@@ -2391,6 +2447,15 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 4; recCnt++) {
       drawingRecords = 2;
     }
     EmfPlusDrawLines DrawLines;
+
+  } else if (recType == 0xb) {
+    // Define the pen (ObjectID 0) once, before the first DrawRects; later DrawRects reuse it.
+    if (penObjectDefined == 0) {
+      EmfPlusObjectPen PenObject;
+      penObjectDefined = 1;
+      drawingRecords = 2;
+    }
+    EmfPlusDrawRects DrawRects;
 
   } else if (recType == 0x3a) {
     EmfPlusSetTSClip SetTSClip;
