@@ -4,12 +4,13 @@
 //      File: EMFPlus.bt
 //   Authors: Gabor Seljan
 //    E-mail: gabor@seljan.hu
-//   Version: 0.1
+//   Version: 0.3
 //   Purpose: Enhanced Metafile Format Plus (EMFPLUS) template.
 //  Category: Image
 // File Mask: *.emf
 //  ID Bytes: 01 00 00 00
 //   History:
+//   0.3   2026-10-29 G Seljan: Expanded fill, drawing, clipping and compositing generation.
 //   0.2   2026-10-29 G Seljan: Corrected EMF/EMF+ headers and record accounting.
 //   0.1   2022-05-31 G Seljan: Initial version.
 //
@@ -2366,6 +2367,11 @@ typedef struct tagEMRRESERVED117 {
 
 LittleEndian();
 
+// Keep structural size/count fields (EMR_HEADER nSize/nBytes/nRecords and every
+// EMR_COMMENT/EMF+ Size/DataSize fix-up) consistent with the emitted bytes:
+// no evil out-of-range values until the final header fix-ups are written.
+local int framingEvilState = SetEvilBit(false);
+
 // Add EMF_HEADER record.
 EMRHEADER EmfHeader;
 
@@ -2490,6 +2496,7 @@ DWORD nBytes = { file_size };
 FSeek(0x34);
 DWORD nRecords = { emfRecordCount };
 FSeek(file_size);
+SetEvilBit(framingEvilState);
 
 // Check file size.
 if (file_size % 4 != 0) { // The total size of the record must be a multiple of 4 bytes.
