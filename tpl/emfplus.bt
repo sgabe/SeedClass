@@ -1092,6 +1092,42 @@ typedef struct tagEmfPlusSetPixelOffsetMode {
 
 } EmfPlusSetPixelOffsetMode;
 
+// [MS-EMFPLUS] 2.3.6.6 EmfPlusSetRenderingOrigin Record
+typedef struct tagEmfPlusSetRenderingOrigin {
+  local int64 start = FTell();
+
+  // Add EMR_COMMENT_EMFPLUS record.
+  DWORD cType       = { 0x00000046 };
+  DWORD cSize;
+  DWORD cDataSize;
+  DWORD cIdentifier = { 0x2B464D45 };
+
+  local int64 rStart = FTell();
+  WORD Type         = { 0x401D     };
+  WORD Flags        = { 0x0000     }; // Not used, must be zero.
+  DWORD Size;
+  DWORD DataSize;
+  LONG x            = { 0 };          // Horizontal rendering origin (signed 32-bit).
+  LONG y            = { 0 };          // Vertical rendering origin (signed 32-bit).
+
+  // Align the EMF+ record, then the EMR_COMMENT_EMFPLUS record, to 4 bytes.
+  local int64 rDataEnd = FTell();
+  BYTE RecordAlignmentPadding[Align4(rDataEnd - rStart) - (rDataEnd - rStart)];
+  local int64 rEnd = FTell();
+  BYTE CommentAlignmentPadding[Align4(rEnd - start) - (rEnd - start)];
+  local int64 end = FTell();
+
+  // Fix Size and DataSize fields from the actual record boundaries.
+  FSeek(start + 4);
+  DWORD cSize = { (DWORD)(end - start) };           // Comment header, identifier, EMF+ record and padding (0x24).
+  DWORD cDataSize = { (DWORD)(rEnd - start - 12) }; // Identifier and EMF+ record (0x18).
+  FSeek(rStart + 4);
+  DWORD Size = { (DWORD)(rEnd - rStart) };          // EMF+ record header and data (0x14).
+  DWORD DataSize = { (DWORD)(rEnd - rStart - 12) }; // EMF+ data after the record header (0x08).
+  FSeek(end);
+
+} EmfPlusSetRenderingOrigin;
+
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/b794b780-e9a8-4682-af65-9b614aecfbe6
 typedef struct tagEmfPlusDrawDriverString {
   local uint _rGlyphCount = 1;
@@ -2504,7 +2540,7 @@ local uint penObjectDefined = 0;      // EmfPlusPen with ObjectID 0 has been emi
 for (recCnt = 0; recCnt < EmfHeader.nRecords - 4; recCnt++) {
   drawingStart = FTell();
   drawingRecords = 1;                 // Outer EMR_COMMENT records emitted by this selection.
-  local UBYTE possible[] = { 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0x22, 0x23, 0x24, 0x32 };
+  local UBYTE possible[] = { 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0x1d, 0x22, 0x23, 0x24, 0x32 };
   //local UBYTE possible[] = { 0x36, 0xd };
   UBYTE recType <values=possible>;
   FSkip(-1);
@@ -2520,6 +2556,9 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 4; recCnt++) {
 
   } else if (recType == 0xe) {
     EmfPlusFillEllipse FillEllipse;
+
+  } else if (recType == 0x1d) {
+    EmfPlusSetRenderingOrigin SetRenderingOrigin;
 
   } else if (recType == 0x22) {
     EmfPlusSetPixelOffsetMode SetPixelOffsetMode;
