@@ -1534,6 +1534,71 @@ typedef struct tagEmfPlusPointF {
   FLOAT Y;                            // 32-bit floating-point vertical coordinate.
 } EmfPlusPointF;
 
+// [MS-EMFPLUS] 2.3.4.15 EmfPlusFillClosedCurve Record
+typedef struct tagEmfPlusFillClosedCurve {
+  // Emit only the known values below; no evil out-of-range values in this record.
+  local int previousEvilState = SetEvilBit(false);
+  local int64 start = FTell();
+
+  // Add EMR_COMMENT_EMFPLUS record.
+  DWORD cType       = { 0x00000046 };
+  DWORD cSize;
+  DWORD cDataSize;
+  DWORD cIdentifier = { 0x2B464D45 };
+
+  local int64 rStart = FTell();
+  WORD Type         = { 0x4016     };
+  WORD Flags        = { 0x8000     }; // S=1 (BrushId is an EmfPlusARGB color), C=0, W=0 (alternate), P=0 (absolute).
+  DWORD Size;
+  DWORD DataSize;
+  EmfPlusARGB BrushId;                // S=1: BrushId holds an EmfPlusARGB color.
+  FLOAT Tension     = { 0.5        }; // Finite fixed curve tension.
+  DWORD Count       = { 0x00000003 }; // Number of points in PointData.
+
+  // C=0, P=0: PointData: array of Count [MS-EMFPLUS] 2.2.2.36 EmfPlusPointF
+  // objects with 32-bit floating-point absolute coordinates.
+  local int64 pointDataStart = FTell();
+  EmfPlusPointF PointData[Count];
+  local int64 rDataEnd = FTell();
+
+  // Array declarations take no initializers: rewrite the emitted array bytes
+  // in place with a noncollinear triangle bounded inside the frame; the curve
+  // is closed implicitly, so no duplicate closing point.
+  FSeek(pointDataStart);
+  FLOAT PointData0XValue = { 40.0  }; // PointData[0].X.
+  FLOAT PointData0YValue = { 40.0  }; // PointData[0].Y.
+  FLOAT PointData1XValue = { 160.0 }; // PointData[1].X.
+  FLOAT PointData1YValue = { 40.0  }; // PointData[1].Y.
+  FLOAT PointData2XValue = { 100.0 }; // PointData[2].X.
+  FLOAT PointData2YValue = { 160.0 }; // PointData[2].Y.
+  FSeek(rDataEnd);
+
+  // Align the EMF+ record, then the EMR_COMMENT_EMFPLUS record, to 4 bytes.
+  BYTE RecordAlignmentPadding[Align4(rDataEnd - rStart) - (rDataEnd - rStart)];
+  local int64 rEnd = FTell();
+  BYTE CommentAlignmentPadding[Align4(rEnd - start) - (rEnd - start)];
+  local int64 end = FTell();
+
+  // EmfPlusPointF objects physically emitted in the PointData span.
+  local uint pointCount = (uint)((rDataEnd - pointDataStart) / 8);
+
+  // Fix constant, size and Count fields from the actual record boundaries.
+  FSeek(start);
+  DWORD cType       = { 0x00000046 };
+  DWORD cSize = { (DWORD)(end - start) };           // Comment header, identifier, EMF+ record and padding (0x40).
+  DWORD cDataSize = { (DWORD)(rEnd - start - 12) }; // Identifier and EMF+ record (0x34).
+  DWORD cIdentifier = { 0x2B464D45 };
+  WORD Type         = { 0x4016     };
+  WORD Flags        = { 0x8000     };
+  DWORD Size = { (DWORD)(rEnd - rStart) };          // EMF+ record header and data (0x30).
+  DWORD DataSize = { (DWORD)(rEnd - rStart - 12) }; // EMF+ data after the record header (0x24).
+  FSkip(8);                                         // Preserve the inline BrushId and Tension bytes.
+  DWORD Count       = { (DWORD)pointCount };        // Number of EmfPlusPointF objects emitted.
+  FSeek(end);
+  SetEvilBit(previousEvilState);
+
+} EmfPlusFillClosedCurve;
+
 // [MS-EMFPLUS] 2.3.4.10 EmfPlusDrawLines Record
 typedef struct tagEmfPlusDrawLines {
   // Emit only the known values below; no evil out-of-range values in this record.
@@ -3093,7 +3158,7 @@ local uint penObjectDefined = 0;      // EmfPlusPen with ObjectID 0 has been emi
 for (recCnt = 0; recCnt < EmfHeader.nRecords - 4; recCnt++) {
   drawingStart = FTell();
   drawingRecords = 1;                 // Outer EMR_COMMENT records emitted by this selection.
-  local UBYTE possible[] = { 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0x10, 0x11, 0x12, 0x19, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x2a, 0x2b, 0x2d, 0x2e, 0x2e, 0x2e, 0x2e, 0x32, 0x33 };
+  local UBYTE possible[] = { 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0x10, 0x11, 0x12, 0x16, 0x19, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x2a, 0x2b, 0x2d, 0x2e, 0x2e, 0x2e, 0x2e, 0x32, 0x33 };
   //local UBYTE possible[] = { 0x36, 0xd };
   UBYTE recType <values=possible>;
   FSkip(-1);
@@ -3106,6 +3171,9 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 4; recCnt++) {
 
   } else if (recType == 0xc) {
     EmfPlusFillPolygon FillPolygon;
+
+  } else if (recType == 0x16) {
+    EmfPlusFillClosedCurve FillClosedCurve;
 
   } else if (recType == 0xe) {
     EmfPlusFillEllipse FillEllipse;
