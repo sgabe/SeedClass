@@ -374,9 +374,9 @@ typedef struct tagRGBQUAD {
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/00cc8ab4-ea2e-4bb1-9569-1201af47a0c8
 typedef struct {
-  DWORD cbPixelFormat;
-  DWORD offPixelFormat;
-  DWORD bOpenGL = { {0}, {1} };
+  DWORD cbPixelFormat = { 0 };
+  DWORD offPixelFormat = { 0 };
+  DWORD bOpenGL = { 0 };
 } HeaderExtension1; // Size is 0x64
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/9e96e5cf-e949-49ae-baa8-3fffd948e588
