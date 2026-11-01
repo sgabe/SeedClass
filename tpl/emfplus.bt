@@ -536,7 +536,7 @@ typedef struct {
   DWORD nRecords <min=5, max=5>;                       // Number of records in the metafile.
   WORD  nHandles;                                      // Number of handles in the handle table.
   WORD  sReserved = { 0 };
-  DWORD nDescription = { 0, 4, 8, 12, 16 };            // Number of chars in the unicode description string.
+  DWORD nDescription = { 0 };            // Number of chars in the unicode description string.
   DWORD offDescription = { 0x0000006c };               // Offset to the metafile description record.
   DWORD nPalEntries = { 0 };                           // Number of entries in the metafile palette.
   SIZEL szlDevice = { {0x00000780, 0x00000780} };      // Size of the reference device in pixels.
