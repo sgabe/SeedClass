@@ -381,8 +381,8 @@ typedef struct {
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/9e96e5cf-e949-49ae-baa8-3fffd948e588
 typedef struct {
-  DWORD MicrometersX;
-  DWORD MicrometersY;
+  DWORD MicrometersX = { 0x0007C060 }; // 508000 um, matches szlMillimeters.cx.
+  DWORD MicrometersY = { 0x00045C36 }; // 285750 um, exact 1080 px at 96 DPI (szlMillimeters.cy rounds to 286).
 } HeaderExtension2; // Size is 0x6c
 
 //---------------------------------------------
@@ -534,13 +534,13 @@ typedef struct {
   DWORD nVersion = { 0x00010000 };
   DWORD nBytes;                                        // Size of the metafile in bytes.
   DWORD nRecords <min=5, max=5>;                       // Number of records in the metafile.
-  WORD  nHandles;                                      // Number of handles in the handle table.
+  WORD  nHandles = { 0x0000 };                         // Number of graphics objects used; no outer EMF objects are created.
   WORD  sReserved = { 0 };
-  DWORD nDescription = { 0 };            // Number of chars in the unicode description string.
-  DWORD offDescription = { 0x0000006c };               // Offset to the metafile description record.
+  DWORD nDescription = { 0 };                          // Number of chars in the unicode description string.
+  DWORD offDescription = { 0 };                        // Offset to the metafile description record (0 if absent).
   DWORD nPalEntries = { 0 };                           // Number of entries in the metafile palette.
-  SIZEL szlDevice = { {0x00000780, 0x00000780} };      // Size of the reference device in pixels.
-  SIZEL szlMillimeters = { {0x000002A5, 0x000001A7} }; // Size of the reference device in millimeters.
+  SIZEL szlDevice = { {0x00000780, 0x00000438} };      // Size of the reference device in pixels (1920x1080).
+  SIZEL szlMillimeters = { {0x000001FC, 0x0000011E} }; // Size of the reference device in millimeters (508x286, 96 DPI).
   HeaderExtension1 EmfHeaderExtension1;
   HeaderExtension2 EmfHeaderExtension2;
 } EMRHEADER;
@@ -604,13 +604,13 @@ typedef struct tagEMFPLUSHEADER {
   DWORD cIdentifier = { 0x2B464D45 };
 
   WORD Type = { 0x4001 };
-  WORD Flags = { 0x0000 };
+  WORD Flags = { 0x0000 };          // D=0: EMF+ Only mode.
   DWORD Size = { _rSize };
   DWORD DataSize = { _rDataSize };
   DWORD Version = { 0xDBC01002 };
-  DWORD EmfPlusFlags;
-  DWORD LogicalDpiX;
-  DWORD LogicalDpiY;
+  DWORD EmfPlusFlags <min=0, max=1>; // Only bit 0 (video display context) is defined.
+  DWORD LogicalDpiX = { 0x00000060 }; // 96 DPI.
+  DWORD LogicalDpiY = { 0x00000060 }; // 96 DPI.
 
   // Fix Size and DataSize fields in Add EMR_COMMENT_EMFPLUS record.
   local uint end = FTell();
@@ -1930,14 +1930,16 @@ if (EmfHeader.dSignature != 0x464D4520) {
 }
 
 // Check description size.
-if (EmfHeader.nDescription % 4 != 0) { // The total size of the record must be a multiple of 4 bytes.
+if ((EmfHeader.nDescription * 0x2) % 4 != 0) { // The total size of the record must be a multiple of 4 bytes.
   Warning( "Description size is invalid. Template stopped." );
   return -1;
 }
 
-// Add description record.
-FSeek(EmfHeader.offDescription);
-EMRDESCRIPTION EmfDescription;
+// Add description record, only if present.
+if (EmfHeader.nDescription > 0) {
+  FSeek(EmfHeader.offDescription);
+  EMRDESCRIPTION EmfDescription;
+}
 
 // Add EmfPlusHeader record (after EMR_HEADER).
 FSeek(EmfHeader.nSize);
