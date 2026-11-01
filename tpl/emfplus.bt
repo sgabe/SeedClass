@@ -544,8 +544,10 @@ typedef struct {
   DWORD nDescription = { 0 };                          // Number of chars in the unicode description string.
   DWORD offDescription = { 0 };                        // Offset to the metafile description record (0 if absent).
   DWORD nPalEntries = { 0 };                           // Number of entries in the metafile palette.
-  SIZEL szlDevice = { {0x00000780, 0x00000438} };      // Size of the reference device in pixels (1920x1080).
-  SIZEL szlMillimeters = { {0x000001FC, 0x0000011E} }; // Size of the reference device in millimeters (508x286, 96 DPI).
+  LONG  szlDevice_cx = { 0x00000780 };                 // szlDevice.cx: reference device width in pixels (1920).
+  LONG  szlDevice_cy = { 0x00000438 };                 // szlDevice.cy: reference device height in pixels (1080).
+  LONG  szlMillimeters_cx = { 0x000001FC };            // szlMillimeters.cx: reference device width in mm (508, 96 DPI).
+  LONG  szlMillimeters_cy = { 0x0000011E };            // szlMillimeters.cy: reference device height in mm (286, 96 DPI).
   HeaderExtension1 EmfHeaderExtension1;
   HeaderExtension2 EmfHeaderExtension2;
 } EMRHEADER;
