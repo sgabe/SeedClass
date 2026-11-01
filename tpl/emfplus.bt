@@ -1090,6 +1090,8 @@ typedef struct tagEmfPlusPointF {
 
 // [MS-EMFPLUS] 2.3.4.10 EmfPlusDrawLines Record
 typedef struct tagEmfPlusDrawLines {
+  // Emit only the known values below; no evil out-of-range values in this record.
+  local int previousEvilState = SetEvilBit(false);
   local int64 start = FTell();
 
   // Add EMR_COMMENT_EMFPLUS record.
@@ -1128,14 +1130,22 @@ typedef struct tagEmfPlusDrawLines {
   BYTE CommentAlignmentPadding[Align4(rEnd - start) - (rEnd - start)];
   local int64 end = FTell();
 
-  // Fix Size and DataSize fields from the actual record boundaries.
-  FSeek(start + 4);
+  // EmfPlusPointF objects physically emitted after the record header (12) and Count (4).
+  local uint pointCount = (uint)((rDataEnd - rStart - 16) / 8);
+
+  // Fix constant, size and Count fields from the actual record boundaries.
+  FSeek(start);
+  DWORD cType       = { 0x00000046 };
   DWORD cSize = { (DWORD)(end - start) };           // Comment header, identifier, EMF+ record and padding.
   DWORD cDataSize = { (DWORD)(rEnd - start - 12) }; // Identifier and EMF+ record.
-  FSeek(rStart + 4);
+  DWORD cIdentifier = { 0x2B464D45 };
+  WORD Type         = { 0x400D     };
+  WORD Flags        = { 0x0000     };
   DWORD Size = { (DWORD)(rEnd - rStart) };          // EMF+ record header and data (0x10 + 8 * Count).
   DWORD DataSize = { (DWORD)(rEnd - rStart - 12) }; // EMF+ data after the record header (0x04 + 8 * Count).
+  DWORD Count       = { (DWORD)pointCount };        // Number of EmfPlusPointF objects emitted.
   FSeek(end);
+  SetEvilBit(previousEvilState);
 
 } EmfPlusDrawLines;
 
@@ -1152,6 +1162,8 @@ typedef struct tagGUID {
 
 // [MS-EMFPLUS] 2.3.5.1 EmfPlusObject Record (ObjectTypePen, 2.2.1.7 EmfPlusPen)
 typedef struct tagEmfPlusObjectPen {
+  // Emit only the known values below; no evil out-of-range values in this record.
+  local int previousEvilState = SetEvilBit(false);
   local int64 start = FTell();
 
   // Add EMR_COMMENT_EMFPLUS record.
@@ -1187,14 +1199,25 @@ typedef struct tagEmfPlusObjectPen {
   BYTE CommentAlignmentPadding[Align4(rEnd - start) - (rEnd - start)];
   local int64 end = FTell();
 
-  // Fix Size and DataSize fields from the actual record boundaries.
-  FSeek(start + 4);
+  // Fix constant and size fields from the actual record boundaries.
+  FSeek(start);
+  DWORD cType       = { 0x00000046 };
   DWORD cSize = { (DWORD)(end - start) };           // Comment header, identifier, EMF+ record and padding (0x3C).
   DWORD cDataSize = { (DWORD)(rEnd - start - 12) }; // Identifier and EMF+ record (0x30).
-  FSeek(rStart + 4);
+  DWORD cIdentifier = { 0x2B464D45 };
+  WORD Type         = { 0x4008     };
+  WORD Flags        = { 0x0200     };
   DWORD Size = { (DWORD)(rEnd - rStart) };          // EMF+ record header and data (0x2C).
   DWORD DataSize = { (DWORD)(rEnd - rStart - 12) }; // EMF+ data after the record header (0x20).
+  DWORD Version     = { 0xDBC01002 };
+  DWORD PenType     = { 0x00000000 };
+  DWORD PenDataFlags = { 0x00000000 };
+  DWORD PenUnit     = { 0x00000002 };
+  FLOAT PenWidth    = { 2.0        };
+  DWORD BrushVersion = { 0xDBC01002 };
+  DWORD BrushType   = { 0x00000000 };
   FSeek(end);
+  SetEvilBit(previousEvilState);
 
 } EmfPlusObjectPen;
 
