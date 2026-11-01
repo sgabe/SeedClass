@@ -821,6 +821,64 @@ typedef struct tagEmfPlusFillEllipse {
 
 } EmfPlusFillEllipse;
 
+// [MS-EMFPLUS] 2.3.4.19 EmfPlusFillPolygon Record
+typedef struct tagEmfPlusFillPolygon {
+  local int64 start = FTell();
+
+  // Add EMR_COMMENT_EMFPLUS record.
+  DWORD cType       = { 0x00000046 };
+  DWORD cSize;
+  DWORD cDataSize;
+  DWORD cIdentifier = { 0x2B464D45 };
+
+  local int64 rStart = FTell();
+  WORD Type         = { 0x400C     };
+  WORD Flags        = { 0xC000     }; // S=1 (inline color), C=1 (EmfPlusPoint), P=0 (absolute).
+  DWORD Size;
+  DWORD DataSize;
+  EmfPlusARGB BrushID;                // S=1: BrushID holds an EmfPlusARGB color.
+  DWORD Count       <min=3, max=6>;   // Number of points in the array.
+
+  // C=1, P=0: [MS-EMFPLUS] 2.2.2.35 EmfPlusPoint objects with signed 16-bit
+  // absolute coordinates. The first Count vertices of a convex hexagon, in
+  // order, always form a simple nondegenerate polygon.
+  SHORT Point0X     = { 100 };
+  SHORT Point0Y     = { 20  };
+  SHORT Point1X     = { 180 };
+  SHORT Point1Y     = { 60  };
+  SHORT Point2X     = { 180 };
+  SHORT Point2Y     = { 140 };
+  if (Count > 3) {
+    SHORT Point3X   = { 100 };
+    SHORT Point3Y   = { 180 };
+  }
+  if (Count > 4) {
+    SHORT Point4X   = { 20  };
+    SHORT Point4Y   = { 140 };
+  }
+  if (Count > 5) {
+    SHORT Point5X   = { 20  };
+    SHORT Point5Y   = { 60  };
+  }
+
+  // Align the EMF+ record, then the EMR_COMMENT_EMFPLUS record, to 4 bytes.
+  local int64 rDataEnd = FTell();
+  BYTE RecordAlignmentPadding[Align4(rDataEnd - rStart) - (rDataEnd - rStart)];
+  local int64 rEnd = FTell();
+  BYTE CommentAlignmentPadding[Align4(rEnd - start) - (rEnd - start)];
+  local int64 end = FTell();
+
+  // Fix Size and DataSize fields from the actual record boundaries.
+  FSeek(start + 4);
+  DWORD cSize = { (DWORD)(end - start) };           // Comment header, identifier, EMF+ record and padding.
+  DWORD cDataSize = { (DWORD)(rEnd - start - 12) }; // Identifier and EMF+ record.
+  FSeek(rStart + 4);
+  DWORD Size = { (DWORD)(rEnd - rStart) };          // EMF+ record header and data.
+  DWORD DataSize = { (DWORD)(rEnd - rStart - 12) }; // EMF+ data after the record header.
+  FSeek(end);
+
+} EmfPlusFillPolygon;
+
 //------------------------------------------------
 // Property Record Types
 //------------------------------------------------
@@ -2127,7 +2185,7 @@ local uint recCnt = 0;
 local int64 drawingStart = 0;
 for (recCnt = 0; recCnt < EmfHeader.nRecords - 4; recCnt++) {
   drawingStart = FTell();
-  local UBYTE possible[] = { 0x9, 0xa, 0xe, 0x22, 0x23 };
+  local UBYTE possible[] = { 0x9, 0xa, 0xc, 0xe, 0x22, 0x23 };
   //local UBYTE possible[] = { 0x36, 0xd };
   UBYTE recType <values=possible>;
   FSkip(-1);
@@ -2137,6 +2195,9 @@ for (recCnt = 0; recCnt < EmfHeader.nRecords - 4; recCnt++) {
 
   } else if (recType == 0xa) {
     EmfPlusFillRects FillRects;
+
+  } else if (recType == 0xc) {
+    EmfPlusFillPolygon FillPolygon;
 
   } else if (recType == 0xe) {
     EmfPlusFillEllipse FillEllipse;
