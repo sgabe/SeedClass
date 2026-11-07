@@ -9,8 +9,8 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.6.1'
-__date__      = '2026/11/07'
+__version__   = '0.6.2'
+__date__      = '2026/11/08'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
 
@@ -32,6 +32,7 @@ from base64 import b64encode
 from tensorflow.keras import Input
 from tensorflow.keras.regularizers import L2
 from tensorflow.keras.models import Sequential
+from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.metrics import AUC, Recall, Precision
@@ -219,7 +220,7 @@ def build_model():
     model.add(Dense(1, activation='sigmoid'))
 
     model.compile(
-        optimizer='adam',
+        optimizer=Adam(learning_rate=LEARNING_RATE),
         loss='binary_crossentropy',
         metrics=['accuracy',
             Recall(thresholds=THRESHOLD, name='recall'),
