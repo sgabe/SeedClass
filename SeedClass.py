@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.6.0'
+__version__   = '0.6.1'
 __date__      = '2026/11/07'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
@@ -326,6 +326,9 @@ def main():
 
     if REGULARIZATION:
         logging.info('Using L2 kernel regularization (0.00001) in Dense layers')
+
+    if SEED is not None:
+        tf.keras.utils.set_random_seed(SEED)
 
     dd = {}
     if args.negative:
