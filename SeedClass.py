@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.5.4'
+__version__   = '0.5.5'
 __date__      = '2026/11/07'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
@@ -39,7 +39,7 @@ from tensorflow.keras.metrics import TruePositives, TrueNegatives
 from tensorflow.keras.metrics import FalsePositives, FalseNegatives
 
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.model_selection import KFold, train_test_split
+from sklearn.model_selection import StratifiedKFold, train_test_split
 
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
@@ -280,7 +280,8 @@ def main():
     X_train, X_test, y_train, y_test = train_test_split(X, y,
         test_size=TEST_SIZE,
         random_state=SEED,
-        shuffle=True)
+        shuffle=True,
+        stratify=y)
 
     scaler = MinMaxScaler(feature_range=(0, FEATURE_RANGE_MAX))
     X_train = pd.DataFrame(scaler.fit_transform(X_train)).values
@@ -300,7 +301,7 @@ def main():
 
     if VALIDATION:
         histories = []
-        kfold = KFold(n_splits=N_SPLITS, shuffle=True)
+        kfold = StratifiedKFold(n_splits=N_SPLITS, shuffle=True)
         for train, test in kfold.split(X_train, y_train):
             model = build_model()
             history = model.fit(
