@@ -87,7 +87,8 @@ def plot_essential_metrics(metrics, history):
         name = metric.replace("_"," ").capitalize()
         plt.subplot(2,2,n+1)
         plt.plot(history.epoch, history.history[metric], color='C{}'.format(n), label='Train')
-        plt.plot(history.epoch, history.history['val_'+metric], color='C{}'.format(n), linestyle="--", label='Val')
+        if 'val_'+metric in history.history:
+            plt.plot(history.epoch, history.history['val_'+metric], color='C{}'.format(n), linestyle="--", label='Val')
         plt.xlabel('Epoch')
         plt.ylabel(name)
         plt.suptitle('Essential Metrics')
@@ -111,10 +112,11 @@ def plot_essential_metrics(metrics, history):
 
 def plot_confusion_metrics(metrics, history):
     fig = plt.figure()
+    phases = ['Training', 'Validation'] if all('val_'+metric in history.history for metric in metrics) else ['Training']
     for n, metric in enumerate(metrics):
         name = metric.replace("_"," ").capitalize()
-        for i, phase in enumerate(['Training', 'Validation']):
-            plt.subplot(1, 2, i + 1)
+        for i, phase in enumerate(phases):
+            plt.subplot(1, len(phases), i + 1)
             if phase == 'Validation':
                 plt.plot(history.epoch, history.history['val_'+metric], color='C{}'.format(n), linestyle='--', label=name)
             else:
