@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.6.2'
+__version__   = '0.6.3'
 __date__      = '2026/11/08'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
@@ -18,7 +18,6 @@ import io
 import os
 import sys
 import onnx
-import heapq
 import logging
 import tf2onnx
 import numpy as np
@@ -385,45 +384,20 @@ def main():
 
     df = pd.DataFrame.from_dict(dd, orient='index').add_prefix('f')
 
-    X_pred = df.drop('f0', axis=1).values
-    X_pred = pd.DataFrame(scaler.transform(X_pred))
+    raw_scores = []
+    if len(df.index) > 0:
+        X_pred = df.drop('f0', axis=1).values
+        X_pred = pd.DataFrame(scaler.transform(X_pred))
+        raw_scores = [score for row in model.predict(X_pred, verbose=VERBOSE) for score in row]
 
-    preds = (model.predict(X_pred, verbose=VERBOSE) > THRESHOLD).astype('int32')
-    indices = []
+    if not np.all(np.isfinite(raw_scores)):
+        raise ValueError('Prediction scores contain non-finite values')
+    ranked = sorted(range(len(raw_scores)), key=lambda i: (-raw_scores[i], df.index[i]))
+    above = [i for i in ranked if raw_scores[i] > THRESHOLD]
+    indices = (above or ranked)[:20]
+    lst = [df.index[i] for i in indices]
 
-    if np.count_nonzero(preds) == 0:
-        consent = input('No positive predictions found. Automatically adjust threshold? (yes/no): ').strip().lower()
-        if consent in ['yes', 'y']:
-            logging.info('Automatically adjusting threshold for finding best candidates')
-            best = []
-            uniques = set()
-
-            preds = model.predict(X_pred, verbose=VERBOSE)
-
-            flats = [item for sublist in preds for item in sublist]
-            for v in heapq.nlargest(len(flats), flats):
-                if v not in uniques:
-                    uniques.add(v)
-                    best.append(v)
-                if len(best) == 20:
-                    break
-
-            indices = [flats.index(v) for v in best]
-
-            preds = (preds > min(best)).astype('int32')
-        else:
-            logging.error('Threshold adjustment skipped. Predictions might not include the best candidates.')
-
-    lst = list()
-    for idx, l in np.ndenumerate(preds):
-        if l == 1:
-            if indices and idx[0] not in indices:
-                continue
-            lst.append(df.index[idx[0]])
-        if len(lst) == 20:
-            break
-
-    logging.info(f'Selected {len(lst)} files out of {len(X_pred)} total')
+    logging.info(f'Selected {len(lst)} files out of {len(df.index)} total')
 
     try:
         for filename in lst:
