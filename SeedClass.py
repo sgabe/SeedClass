@@ -9,8 +9,8 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.5.2'
-__date__      = '2026/05/05'
+__version__   = '0.5.3'
+__date__      = '2026/11/07'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
 
@@ -209,6 +209,32 @@ def load_data(data, archive, label=LABEL_NEGATIVE):
         return data
 
 
+def build_model():
+    model = Sequential()
+    model.add(Input(shape=(NUM_FEATURES,)))
+    model.add(Dense(NUM_FEATURES, activation='relu', kernel_regularizer=L2(0.00001) if REGULARIZATION else None))
+    model.add(Dropout(0.5))
+    model.add(Dense(NUM_FEATURES, activation='relu', kernel_regularizer=L2(0.00001) if REGULARIZATION else None))
+    model.add(Dropout(0.5))
+    model.add(Dense(1, activation='sigmoid'))
+
+    model.compile(
+        optimizer='adam',
+        loss='binary_crossentropy',
+        metrics=['accuracy',
+            Recall(thresholds=THRESHOLD, name='recall'),
+            Precision(thresholds=THRESHOLD, name='precision'),
+            TruePositives(thresholds=THRESHOLD, name='tp'),
+            TrueNegatives(thresholds=THRESHOLD, name='tn'),
+            FalsePositives(thresholds=THRESHOLD, name='fp'),
+            FalseNegatives(thresholds=THRESHOLD, name='fn'),
+            AUC(name='auc'),
+            AUC(name='prc', curve='PR')
+        ]
+    )
+    return model
+
+
 def main():
     if not os.path.isfile(args.negative):
         logging.error(f'Archive of negative samples {args.negative} does not exist or it is not a file!')
@@ -266,33 +292,11 @@ def main():
             scale.tofile(f)
             min_.tofile(f)
 
-    model = Sequential()
-    model.add(Input(shape=(NUM_FEATURES,)))
-    model.add(Dense(NUM_FEATURES, activation='relu', kernel_regularizer=L2(0.00001) if REGULARIZATION else None))
-    model.add(Dropout(0.5))
-    model.add(Dense(NUM_FEATURES, activation='relu', kernel_regularizer=L2(0.00001) if REGULARIZATION else None))
-    model.add(Dropout(0.5))
-    model.add(Dense(1, activation='sigmoid'))
-
-    model.compile(
-        optimizer='adam',
-        loss='binary_crossentropy',
-        metrics=['accuracy',
-            Recall(thresholds=THRESHOLD, name='recall'),
-            Precision(thresholds=THRESHOLD, name='precision'),
-            TruePositives(thresholds=THRESHOLD, name='tp'),
-            TrueNegatives(thresholds=THRESHOLD, name='tn'),
-            FalsePositives(thresholds=THRESHOLD, name='fp'),
-            FalseNegatives(thresholds=THRESHOLD, name='fn'),
-            AUC(name='auc'),
-            AUC(name='prc', curve='PR')
-        ]
-    )
-
     if VALIDATION:
         histories = []
         kfold = KFold(n_splits=N_SPLITS, shuffle=True)
         for train, test in kfold.split(X_train, y_train):
+            model = build_model()
             history = model.fit(
                 x=X_train[train],
                 y=y_train[train],
@@ -306,6 +310,7 @@ def main():
             )
             histories.append(history)
     else:
+        model = build_model()
         history = model.fit(
             x=X_train,
             y=y_train,
