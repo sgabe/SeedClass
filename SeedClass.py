@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.5.5'
+__version__   = '0.6.0'
 __date__      = '2026/11/07'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
@@ -241,6 +241,67 @@ def take_rows(data, indices):
     return data[indices]
 
 
+def train_model(X_train, y_train):
+    final_epochs = EPOCHS
+
+    if VALIDATION:
+        best_epochs = []
+        labels = np.asarray(y_train).reshape(-1)
+        kfold = StratifiedKFold(n_splits=N_SPLITS, shuffle=True, random_state=SEED)
+        for fold, (train, test) in enumerate(kfold.split(X_train, labels), start=1):
+            fold_scaler = MinMaxScaler(feature_range=(0, FEATURE_RANGE_MAX))
+            X_fold_train = fold_scaler.fit_transform(take_rows(X_train, train))
+            X_fold_val = fold_scaler.transform(take_rows(X_train, test))
+            y_fold_train = np.asarray(take_rows(y_train, train)).reshape(-1)
+            y_fold_val = np.asarray(take_rows(y_train, test)).reshape(-1)
+
+            model = build_model()
+            history = model.fit(
+                x=X_fold_train,
+                y=y_fold_train,
+                batch_size=BATCH_SIZE,
+                epochs=EPOCHS,
+                verbose=VERBOSE,
+                validation_data=(X_fold_val, y_fold_val),
+                callbacks=[
+                    EarlyStopping(monitor='val_loss', mode='min', patience=5, restore_best_weights=True),
+                ]
+            )
+
+            val_loss = np.asarray(history.history.get('val_loss', []), dtype=np.float64)
+            if val_loss.size == 0:
+                raise ValueError(f'Fold {fold}: no validation loss was recorded')
+            if not np.all(np.isfinite(val_loss)):
+                raise ValueError(f'Fold {fold}: validation loss contains non-finite values')
+
+            best_epoch = int(np.argmin(val_loss)) + 1
+            best_epochs.append(best_epoch)
+            logging.info(f'Fold {fold}/{N_SPLITS}: best epoch {best_epoch} of {len(val_loss)} trained (val_loss {val_loss[best_epoch - 1]:.4f})')
+            if len(val_loss) >= EPOCHS:
+                logging.warning(f'Fold {fold}/{N_SPLITS}: exhausted the epoch cap ({EPOCHS}) without early stopping; epoch search is capped')
+
+        mean_epochs = float(np.mean(best_epochs))
+        final_epochs = max(1, int(np.ceil(mean_epochs)))
+        logging.info(f'Best epochs per fold: {best_epochs} - Mean: {mean_epochs:.2f} - Chosen final epochs: {final_epochs}')
+    else:
+        logging.info(f'No epoch search; using configured {final_epochs} epochs for final training')
+
+    final_scaler = MinMaxScaler(feature_range=(0, FEATURE_RANGE_MAX))
+    X_final = final_scaler.fit_transform(X_train)
+    y_final = np.asarray(y_train).reshape(-1)
+
+    final_model = build_model()
+    final_model.fit(
+        x=X_final,
+        y=y_final,
+        batch_size=BATCH_SIZE,
+        epochs=final_epochs,
+        verbose=VERBOSE
+    )
+
+    return final_model, final_scaler
+
+
 def main():
     if not os.path.isfile(args.negative):
         logging.error(f'Archive of negative samples {args.negative} does not exist or it is not a file!')
@@ -283,8 +344,9 @@ def main():
         shuffle=True,
         stratify=y)
 
-    scaler = MinMaxScaler(feature_range=(0, FEATURE_RANGE_MAX))
-    X_train = pd.DataFrame(scaler.fit_transform(X_train)).values
+    model, scaler = train_model(X_train, y_train)
+
+    X_train = pd.DataFrame(scaler.transform(X_train)).values
     X_test = pd.DataFrame(scaler.transform(X_test)).values
 
     if SAVE:
@@ -298,37 +360,6 @@ def main():
             np.array([len(scale)], dtype=np.int32).tofile(f)
             scale.tofile(f)
             min_.tofile(f)
-
-    if VALIDATION:
-        histories = []
-        kfold = StratifiedKFold(n_splits=N_SPLITS, shuffle=True)
-        for train, test in kfold.split(X_train, y_train):
-            model = build_model()
-            history = model.fit(
-                x=X_train[train],
-                y=y_train[train],
-                batch_size=BATCH_SIZE,
-                epochs=EPOCHS,
-                verbose=VERBOSE,
-                validation_data=(X_train[test], y_train[test]),
-                callbacks=[
-                    EarlyStopping(monitor='val_loss', mode='min', restore_best_weights=True),
-                ]
-            )
-            histories.append(history)
-    else:
-        model = build_model()
-        history = model.fit(
-            x=X_train,
-            y=y_train,
-            batch_size=BATCH_SIZE,
-            epochs=EPOCHS,
-            verbose=VERBOSE,
-            validation_data=(X_test, y_test),
-            callbacks=[
-                EarlyStopping(monitor='val_loss', mode='min', restore_best_weights=True),
-            ]
-        )
 
     scores = model.evaluate(X_test, y_test, verbose=VERBOSE)
     logging.info(f'Loss: {scores[0] * 100:.2f}% - Recall: {scores[2] * 100:.2f}% - Precision: {scores[3] * 100:.2f}% - PRC: {scores[9] * 100:.2f}%')
