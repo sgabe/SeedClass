@@ -22,6 +22,12 @@ np.set_printoptions(precision=16)
 pd.set_option('display.precision', 16)
 
 
+def take_rows(data, indices):
+    if hasattr(data, 'iloc'):
+        return data.iloc[indices]
+    return data[indices]
+
+
 def load_data(data, archive, label=config.LABEL_NEGATIVE):
     def process(data):
         # Normalize decimal numbers.

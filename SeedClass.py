@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.5.3'
+__version__   = '0.5.4'
 __date__      = '2026/11/07'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
@@ -233,6 +233,12 @@ def build_model():
         ]
     )
     return model
+
+
+def take_rows(data, indices):
+    if hasattr(data, 'iloc'):
+        return data.iloc[indices]
+    return data[indices]
 
 
 def main():
