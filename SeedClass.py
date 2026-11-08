@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.6.5'
+__version__   = '0.6.6'
 __date__      = '2026/11/08'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
@@ -364,8 +364,8 @@ def main():
             scale.tofile(f)
             min_.tofile(f)
 
-    scores = model.evaluate(X_test, y_test, verbose=VERBOSE)
-    logging.info(f'Loss: {scores[0] * 100:.2f}% - Recall: {scores[2] * 100:.2f}% - Precision: {scores[3] * 100:.2f}% - PRC: {scores[9] * 100:.2f}%')
+    scores = model.evaluate(X_test, y_test, verbose=VERBOSE, return_dict=True)
+    logging.info(f'Loss: {scores["loss"]:.4f} - Recall: {scores["recall"]:.2%} - Precision: {scores["precision"]:.2%} - PR-AUC: {scores["prc"]:.2%}')
 
     if SAVE:
         spec = [tf.TensorSpec([None, NUM_FEATURES], tf.float32, name="input")]
