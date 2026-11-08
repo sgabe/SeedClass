@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.6.3'
+__version__   = '0.6.4'
 __date__      = '2026/11/08'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
@@ -91,8 +91,8 @@ parser.add_argument('--seed', dest='seed', type=int, default=None,
                     help='set initial seed (default none)')
 parser.add_argument('--num-features', dest='num_features', type=int, default=256,
                     help='set number of features (default 256)')
-parser.add_argument('--test-size', dest='test_size', type=float, default=0.2,
-                    help='set test size (default 0.2)')
+parser.add_argument('--test-size', dest='test_size', type=float, default=0.25,
+                    help='set test size (default 0.25)')
 parser.add_argument('--batch-size', dest='batch_size', type=int, default=32,
                     help='set batch size (default 32)')
 parser.add_argument('--learning-rate', dest='learning_rate', type=float, default=0.001,
