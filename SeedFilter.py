@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.2.4'
+__version__   = '0.2.5'
 __date__      = '2026/11/08'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
@@ -136,7 +136,7 @@ def main():
     parser.add_argument('-i', '--input', required=True,
                         help='input folder containing all samples')
     parser.add_argument('-o', '--output', required=True,
-                        help='output folder to store the selected samples')
+                        help='new or empty output folder to store the selected samples')
     parser.add_argument('-v', '--variance', type=float, default=30,
                         help='distance threshold in percent, 0 to 100 (defaults to 30)')
     parser.add_argument('-t', '--threads', type=int, default=4,
@@ -164,7 +164,17 @@ def main():
         logging.error(f'Input folder {args.input} does not exist or is not a directory!')
         sys.exit(1)
 
-    os.makedirs(args.output, exist_ok=True)
+    try:
+        if os.path.exists(args.output) and not os.path.isdir(args.output):
+            logging.error(f'Output path {args.output} exists and is not a directory!')
+            sys.exit(1)
+        if os.path.isdir(args.output) and os.listdir(args.output):
+            logging.error(f'Output folder {args.output} is not empty!')
+            sys.exit(1)
+        os.makedirs(args.output, exist_ok=True)
+    except OSError as e:
+        logging.error(f'Could not prepare output folder {args.output}: {e}')
+        sys.exit(1)
 
     logging.info('Grouping files by approximate size...')
     size_groups, total_files = group_files_by_size(args.input, args.bucket)
