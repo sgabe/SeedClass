@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.6.4'
+__version__   = '0.6.5'
 __date__      = '2026/11/08'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
@@ -34,7 +34,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.callbacks import EarlyStopping
-from tensorflow.keras.metrics import AUC, Recall, Precision
+from tensorflow.keras.metrics import AUC, BinaryAccuracy, Recall, Precision
 from tensorflow.keras.metrics import TruePositives, TrueNegatives
 from tensorflow.keras.metrics import FalsePositives, FalseNegatives
 
@@ -221,7 +221,7 @@ def build_model():
     model.compile(
         optimizer=Adam(learning_rate=LEARNING_RATE),
         loss='binary_crossentropy',
-        metrics=['accuracy',
+        metrics=[BinaryAccuracy(name='accuracy', threshold=THRESHOLD),
             Recall(thresholds=THRESHOLD, name='recall'),
             Precision(thresholds=THRESHOLD, name='precision'),
             TruePositives(thresholds=THRESHOLD, name='tp'),
