@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.9.3'
+__version__   = '0.9.4'
 __date__      = '2026/11/08'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
@@ -42,8 +42,8 @@ print('''
                                                                |_|
 '''.format(__version__))
 
-def create_random_groups(input_dir, output_dir, num_files, num_groups):
-    files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))]
+def create_random_groups(input_dir, output_dir, num_files, num_groups, random_seed=None):
+    files = sorted(f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f)))
     count = len(files)
     logging.info(f'Found {count} files in {input_dir}.')
 
@@ -57,8 +57,9 @@ def create_random_groups(input_dir, output_dir, num_files, num_groups):
         logging.warning(f'Not enough files available ({count} found, {needed} requested), selecting all.')
         needed = count
 
-    selected = random.sample(files, needed)
-    random.shuffle(selected)
+    rng = random.Random(random_seed)
+    selected = rng.sample(files, needed)
+    rng.shuffle(selected)
 
     os.makedirs(output_dir, exist_ok=True)
 
@@ -106,6 +107,8 @@ def main():
                         help='number of seed files per group')
     parser.add_argument('-g', '--groups', type=int, required=True,
                         help='total number of groups to create')
+    parser.add_argument('--seed', type=int, default=None,
+                        help='optional integer seed for reproducible selection')
 
     args = parser.parse_args()
 
@@ -120,7 +123,7 @@ def main():
     logging.info(f'Processing folder {args.input} to create {args.groups} group(s) of {args.size} files each in {args.output}.')
 
     try:
-        create_random_groups(args.input, args.output, args.size, args.groups)
+        create_random_groups(args.input, args.output, args.size, args.groups, args.seed)
     except Exception as e:
         logging.error(f'An error occurred: {e}')
 
