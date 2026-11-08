@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.2.6'
+__version__   = '0.2.7'
 __date__      = '2026/11/08'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
@@ -194,24 +194,32 @@ def main():
 
     logging.info(f'{len(size_groups)} size buckets identified.')
 
-    selected = copied = unreadable = copy_failed = 0
+    selected = copied = unreadable = copy_failed = failed_buckets = 0
     with ThreadPoolExecutor(max_workers=args.threads) as executor:
-        futures = []
+        futures = {}
         for bucket, files in size_groups.items():
-            futures.append(
-                executor.submit(process_size_group, bucket, files, args.variance, args.output, args.seed)
-            )
+            future = executor.submit(process_size_group, bucket, files, args.variance, args.output, args.seed)
+            futures[future] = bucket
 
         for future in as_completed(futures):
-            result = future.result()
+            try:
+                result = future.result()
+            except Exception:
+                logging.exception(f'Processing size bucket {futures[future]} failed.')
+                failed_buckets += 1
+                continue
             selected += result.selected
             copied += result.copied
             unreadable += result.unreadable
             copy_failed += result.copy_failed
 
-    logging.info(f'{selected} files selected, {copied} copied to {args.output}.')
+    logging.info(f'{len(futures) - failed_buckets} of {len(futures)} size buckets completed: '
+                 f'{selected} files selected, {copied} copied to {args.output}.')
+    if failed_buckets:
+        logging.error(f'{failed_buckets} size buckets failed; their results are unknown and not counted above.')
     if unreadable or copy_failed:
         logging.error(f'{unreadable} files could not be read, {copy_failed} selected files could not be copied.')
+    if failed_buckets or unreadable or copy_failed:
         sys.exit(1)
 
 
