@@ -9,8 +9,8 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.2.1'
-__date__      = '2026/02/17'
+__version__   = '0.2.2'
+__date__      = '2026/11/08'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
 
@@ -91,12 +91,15 @@ def filter_files_with_variance(group, threshold):
         for file2 in filtered:
             data2 = data_cache[file2]
 
-            diff = quick_difference(data1, data2)
-            if diff < threshold * PREFILTER_BYTES:
-                variance = calculate_variance(data1, data2)
-                if variance < threshold:
-                    unique = False
-                    break
+            if len(data1) == len(data2) and data1:
+                diff = quick_difference(data1, data2)
+                if (diff / (len(data1) * 255)) * 100.0 >= threshold:
+                    continue
+
+            variance = calculate_variance(data1, data2)
+            if variance < threshold:
+                unique = False
+                break
 
         if unique:
             filtered.append(file1)
