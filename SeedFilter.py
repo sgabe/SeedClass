@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.2.5'
+__version__   = '0.2.6'
 __date__      = '2026/11/08'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
@@ -17,12 +17,11 @@ __license__   = 'MIT'
 import os
 import sys
 import math
-import shutil
 import random
 import logging
 import argparse
 
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 logging.basicConfig(
@@ -37,6 +36,8 @@ logging.basicConfig(
 
 MAX_PER_GROUP   = 20  # cap selected files per size group
 PREFILTER_BYTES = 64  # cheap prefilter
+
+GroupResult = namedtuple('GroupResult', 'selected copied unreadable copy_failed')
 
 
 def calculate_variance(data1, data2):
@@ -70,13 +71,11 @@ def group_files_by_size(input_dir, bucket_size):
     return size_groups, total
 
 
-def filter_files_with_variance(group, threshold, rng=random):
+def filter_files_with_variance(group, threshold, rng=random, data_cache=None):
     filtered = []
 
-    if len(group) < 2:
-        return group[:1]
-
-    data_cache = {}
+    if data_cache is None:
+        data_cache = {}
     for file in group:
         try:
             with open(file, 'rb') as f:
@@ -113,17 +112,31 @@ def filter_files_with_variance(group, threshold, rng=random):
     return filtered
 
 
+def write_selected(file, data, output_dir):
+    path = os.path.join(output_dir, os.path.basename(file))
+    f = open(path, 'xb')
+    try:
+        with f:
+            f.write(data)
+    except BaseException:
+        os.remove(path)
+        raise
+
+
 def process_size_group(bucket, group, variance, output_dir, seed=None):
     logging.info(f'Processing size bucket {bucket} ({len(group)} files)')
     rng = random if seed is None else random.Random(f'{seed}:{bucket}')
-    group = filter_files_with_variance(group, variance, rng)
+    data_cache = {}
+    selected = filter_files_with_variance(group, variance, rng, data_cache)
 
-    for file in group:
+    copied = 0
+    for file in selected:
         try:
-            shutil.copy(file, output_dir)
-        except OSError:
-            logging.error(f'Failed to copy file {file} to {output_dir}.')
-    return len(group)
+            write_selected(file, data_cache[file], output_dir)
+            copied += 1
+        except OSError as e:
+            logging.error(f'Failed to copy file {file} to {output_dir}: {e}')
+    return GroupResult(len(selected), copied, len(group) - len(data_cache), len(selected) - copied)
 
 
 def main():
@@ -181,7 +194,7 @@ def main():
 
     logging.info(f'{len(size_groups)} size buckets identified.')
 
-    total_selected = 0
+    selected = copied = unreadable = copy_failed = 0
     with ThreadPoolExecutor(max_workers=args.threads) as executor:
         futures = []
         for bucket, files in size_groups.items():
@@ -190,9 +203,16 @@ def main():
             )
 
         for future in as_completed(futures):
-            total_selected += future.result()
+            result = future.result()
+            selected += result.selected
+            copied += result.copied
+            unreadable += result.unreadable
+            copy_failed += result.copy_failed
 
-    logging.info(f'{total_selected} files selected and copied to {args.output}.')
+    logging.info(f'{selected} files selected, {copied} copied to {args.output}.')
+    if unreadable or copy_failed:
+        logging.error(f'{unreadable} files could not be read, {copy_failed} selected files could not be copied.')
+        sys.exit(1)
 
 
 if __name__ == '__main__':
