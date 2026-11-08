@@ -9,13 +9,14 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.2.2'
+__version__   = '0.2.3'
 __date__      = '2026/11/08'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
 
 import os
 import sys
+import math
 import shutil
 import random
 import logging
@@ -41,6 +42,8 @@ PREFILTER_BYTES = 64  # cheap prefilter
 def calculate_variance(data1, data2):
     if len(data1) != len(data2):
         return 100.0
+    if not data1:
+        return 0.0
     differences = sum(abs(b1 - b2) for b1, b2 in zip(data1, data2))
     max_diff = len(data1) * 255
     return (differences / max_diff) * 100.0
@@ -134,7 +137,7 @@ def main():
     parser.add_argument('-o', '--output', required=True,
                         help='output folder to store the selected samples')
     parser.add_argument('-v', '--variance', type=float, default=30,
-                        help='variance threshold (defaults to 30)')
+                        help='distance threshold in percent, 0 to 100 (defaults to 30)')
     parser.add_argument('-t', '--threads', type=int, default=4,
                         help='number of threads to use (defaults to 4)')
     parser.add_argument('-b', '--bucket', type=int, default=30,
@@ -144,6 +147,14 @@ def main():
 
     if args.bucket <= 0:
         logging.error('Bucket size must be a positive integer.')
+        sys.exit(1)
+
+    if not math.isfinite(args.variance) or not 0 <= args.variance <= 100:
+        logging.error('Variance threshold must be a finite number between 0 and 100.')
+        sys.exit(1)
+
+    if args.threads <= 0:
+        logging.error('Number of threads must be a positive integer.')
         sys.exit(1)
 
     if not os.path.isdir(args.input):
