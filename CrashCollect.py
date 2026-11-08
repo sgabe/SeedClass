@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.3.1'
+__version__   = '0.3.2'
 __date__      = '2026/11/08'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
@@ -52,6 +52,10 @@ def is_valid_crash(filename):
     return re.match(r'^id_\d{6,}_([0-9A-Fa-f]{8}_)?.+$', filename) is not None
 
 
+def is_valid_queue(filename):
+    return re.fullmatch(r'id_\d{6,}', filename) is not None
+
+
 def process_folder(input_path, output_path, extension, do_queue):
     count = 0
 
@@ -88,7 +92,7 @@ def process_folder(input_path, output_path, extension, do_queue):
             logging.info(f'Processing queue folder {queue}...')
             for sample in os.listdir(queue):
                 source = os.path.join(queue, sample)
-                if os.path.isfile(source):
+                if is_valid_queue(sample) and os.path.isfile(source):
                     hash = calculate_hash(source)
                     destination = os.path.join(output_path, f'{hash}{extension}')
                     if not os.path.exists(destination):
