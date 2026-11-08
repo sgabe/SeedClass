@@ -9,7 +9,7 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.2.3'
+__version__   = '0.2.4'
 __date__      = '2026/11/08'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
@@ -70,7 +70,7 @@ def group_files_by_size(input_dir, bucket_size):
     return size_groups, total
 
 
-def filter_files_with_variance(group, threshold):
+def filter_files_with_variance(group, threshold, rng=random):
     filtered = []
 
     if len(group) < 2:
@@ -84,8 +84,8 @@ def filter_files_with_variance(group, threshold):
         except OSError:
             logging.warning(f'Could not read file {file}.')
 
-    files = list(data_cache.keys())
-    random.shuffle(files)
+    files = sorted(data_cache)
+    rng.shuffle(files)
 
     for file1 in files:
         data1 = data_cache[file1]
@@ -113,9 +113,10 @@ def filter_files_with_variance(group, threshold):
     return filtered
 
 
-def process_size_group(bucket, group, variance, output_dir):
+def process_size_group(bucket, group, variance, output_dir, seed=None):
     logging.info(f'Processing size bucket {bucket} ({len(group)} files)')
-    group = filter_files_with_variance(group, variance)
+    rng = random if seed is None else random.Random(f'{seed}:{bucket}')
+    group = filter_files_with_variance(group, variance, rng)
 
     for file in group:
         try:
@@ -142,6 +143,8 @@ def main():
                         help='number of threads to use (defaults to 4)')
     parser.add_argument('-b', '--bucket', type=int, default=30,
                         help='file size bucket width in bytes (defaults to 30)')
+    parser.add_argument('--seed', type=int, default=None,
+                        help='integer seed for a reproducible selection order (defaults to random)')
 
     args = parser.parse_args()
 
@@ -173,7 +176,7 @@ def main():
         futures = []
         for bucket, files in size_groups.items():
             futures.append(
-                executor.submit(process_size_group, bucket, files, args.variance, args.output)
+                executor.submit(process_size_group, bucket, files, args.variance, args.output, args.seed)
             )
 
         for future in as_completed(futures):
