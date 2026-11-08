@@ -9,8 +9,8 @@ Example:
 """
 
 __author__    = 'Gabor Seljan'
-__version__   = '0.9.2'
-__date__      = '2025/04/29'
+__version__   = '0.9.3'
+__date__      = '2026/11/08'
 __copyright__ = 'Copyright (c) 2026 Gabor Seljan'
 __license__   = 'MIT'
 
@@ -54,10 +54,8 @@ def create_random_groups(input_dir, output_dir, num_files, num_groups):
     needed = num_groups * num_files
 
     if count < needed:
-        logging.warning(f'Not enough files available ({count}), selecting all.')
+        logging.warning(f'Not enough files available ({count} found, {needed} requested), selecting all.')
         needed = count
-        num_files = min(num_files, count)
-
 
     selected = random.sample(files, needed)
     random.shuffle(selected)
@@ -66,19 +64,31 @@ def create_random_groups(input_dir, output_dir, num_files, num_groups):
 
     groups = [selected[i:i + num_files] for i in range(0, len(selected), num_files)]
 
+    if len(groups) < num_groups:
+        logging.warning(f'Only {len(groups)} of {num_groups} requested groups can be created.')
+    if len(groups[-1]) < num_files:
+        logging.warning(f'Final group {len(groups)} is partial with {len(groups[-1])} of {num_files} requested files.')
+
+    completed = 0
+    copied = 0
+
     if num_groups == 1:
         for file in groups[0]:
             shutil.copy(os.path.join(input_dir, file), os.path.join(output_dir, file))
-        logging.info(f'Copied {len(groups[0])} files directly into {output_dir}.')
+            copied += 1
+        completed += 1
+        logging.info(f'Copied {copied} files directly into {output_dir}.')
     else:
         for i, group in enumerate(groups, 1):
             dir_path = os.path.join(output_dir, f'group{i}')
             os.makedirs(dir_path, exist_ok=True)
             for file in group:
                 shutil.copy(os.path.join(input_dir, file), os.path.join(dir_path, file))
+                copied += 1
+            completed += 1
             logging.info(f'Group {i} created with {len(group)} files in {dir_path}.')
 
-    logging.info(f'Successfully processed {num_groups} groups in {output_dir}.')
+    logging.info(f'Successfully processed {completed} of {num_groups} requested groups with {copied} files in {output_dir}.')
 
 
 def main():
